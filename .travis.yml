@@ -4,7 +4,7 @@ python:
 sudo: false
 env:
   global:
-    - CONFIG_URL=https://raw.githubusercontent.com/ros-infrastructure/ros_buildfarm_config/production/index.yaml
+    - CONFIG_URL=https://raw.githubusercontent.com/lcas/ros_buildfarm_config/production/index.yaml
     - ROS_DISTRO_NAME=kinetic
     - OS_NAME=ubuntu
     - OS_CODE_NAME=xenial
@@ -91,7 +91,7 @@ matrix:
         - mkdir job && cd job
         - ln -s .. ros_buildfarm
       script:
-        - git clone -b dummy_package https://github.com/ros-infrastructure/ros_buildfarm catkin_workspace/src/ros_buildfarm
+        - git clone -b dummy_package https://github.com/lcas/ros_buildfarm catkin_workspace/src/ros_buildfarm
         - generate_prerelease_script.py $CONFIG_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH --output-dir .
         - ./prerelease.sh -y
     - language: python
@@ -107,7 +107,7 @@ matrix:
         - build_blocked_releases_page.py $CONFIG_URL $ROS_DISTRO_NAME
         - build_release_compare_page.py $CONFIG_URL lunar kinetic
         - build_release_status_page.py $CONFIG_URL $ROS_DISTRO_NAME default
-        - build_repos_status_page.py $ROS_DISTRO_NAME http://packages.ros.org/ros-shadow-fixed/ubuntu http://packages.ros.org/ros/ubuntu --os-code-name-and-arch-tuples xenial:source xenial:amd64 xenial:arm64 xenial:armhf xenial:i386 --cache-dir ./debian_repo_cache --output-name kinetic_xenial
+        - build_repos_status_page.py $ROS_DISTRO_NAME http://lcas.lincoln.ac.uk/ubuntu/main http://packages.ros.org/ros/ubuntu --os-code-name-and-arch-tuples xenial:source xenial:amd64 xenial:arm64 xenial:armhf xenial:i386 --cache-dir ./debian_repo_cache --output-name kinetic_xenial
         - ls -al
     - language: python
       python: "2.7"
@@ -190,7 +190,7 @@ matrix:
         - mkdir job && cd job
         - ln -s .. ros_buildfarm
       script:
-        - git clone -b dummy_package https://github.com/ros-infrastructure/ros_buildfarm catkin_workspace/src/ros_buildfarm
+        - git clone -b dummy_package https://github.com/lcas/ros_buildfarm catkin_workspace/src/ros_buildfarm
         - generate_prerelease_script.py $CONFIG_URL $ROS_DISTRO_NAME default $OS_NAME $OS_CODE_NAME $ARCH --output-dir .
         - ./prerelease.sh -y
     - language: python
@@ -206,7 +206,7 @@ matrix:
         - build_blocked_releases_page.py $CONFIG_URL $ROS_DISTRO_NAME
         - build_release_compare_page.py $CONFIG_URL lunar kinetic
         - build_release_status_page.py $CONFIG_URL $ROS_DISTRO_NAME default
-        - build_repos_status_page.py $ROS_DISTRO_NAME http://packages.ros.org/ros-shadow-fixed/ubuntu http://packages.ros.org/ros/ubuntu --os-code-name-and-arch-tuples xenial:source xenial:amd64 xenial:arm64 xenial:armhf xenial:i386 --cache-dir ./debian_repo_cache --output-name kinetic_xenial
+        - build_repos_status_page.py $ROS_DISTRO_NAME http://lcas.lincoln.ac.uk/ubuntu/main http://packages.ros.org/ros/ubuntu --os-code-name-and-arch-tuples xenial:source xenial:amd64 xenial:arm64 xenial:armhf xenial:i386 --cache-dir ./debian_repo_cache --output-name kinetic_xenial
         - ls -al
 install:
   - pip install catkin-pkg EmPy PyYAML rosdistro
