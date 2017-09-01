@@ -14,7 +14,7 @@ import math
 # folding all dependencies into a single line
 # improves the performance of individual jobs especially with many dependencies
 # but makes it very unlikely to share layers across different jobs
-max_lines = 1
+max_lines = 5
 fold_factor = 1.0 * len(dependencies) / max_lines
 # can be zero if no folding is necessary
 begin_entries_for_line = int(math.floor(fold_factor))
