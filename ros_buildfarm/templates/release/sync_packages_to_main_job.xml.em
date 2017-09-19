@@ -18,7 +18,7 @@
   </properties>
 @(SNIPPET(
     'scm_git',
-    url='https://github.com/ros-infrastructure/reprepro-updater.git',
+    url='https://github.com/LCAS/reprepro-updater.git',
     branch_name='refactor',
     relative_target_dir='reprepro-updater',
     refspec=None,
@@ -37,7 +37,9 @@
     script='\n'.join([
         'echo "# BEGIN SECTION: sync packages to main repo"',
         'export PYTHONPATH=$WORKSPACE/reprepro-updater/src:$PYTHONPATH',
-        'python -u $WORKSPACE/reprepro-updater/scripts/sync_ros_packages.py ubuntu_main --upstream-ros ubuntu_testing -r %s -c' % rosdistro_name,
+        'curl -O https://raw.githubusercontent.com/LCAS/rosdistro/master/kinetic/filter_list_restricted.txt',
+        'sed \'s/$/ deinstall/\' < filter_list_restricted.txt > /var/repos/ubuntu/main/conf/excludefile',
+        'python -u $WORKSPACE/reprepro-updater/scripts/sync_ros_packages.py ubuntu_main --upstream-ros ubuntu_testing -r kinetic -c -f "install excludefile"'
         'echo "# END SECTION"',
     ]),
 ))@
