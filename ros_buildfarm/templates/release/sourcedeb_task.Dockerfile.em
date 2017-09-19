@@ -50,6 +50,10 @@ RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y debhelper 
 RUN sed -i '/    main_tree = repo.tree_drop_dirs(upstream_tree, options.subtarballs)/c\    main_tree = repo.tree_drop_dirs(upstream_tree, options.subtarballs) if options.subtarballs else upstream_tree' /usr/lib/python2.7/dist-packages/gbp/scripts/buildpackage.py
 @[end if]@
 
+COPY .git-credentials /home/buildfarm/.git-credentials
+RUN chmod 600 /home/buildfarm/.git-credentials
+RUN chown buildfarm /home/buildfarm/.git-credentials
+
 USER buildfarm
 ENTRYPOINT ["sh", "-c"]
 @{
