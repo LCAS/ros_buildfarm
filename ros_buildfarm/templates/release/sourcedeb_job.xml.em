@@ -172,7 +172,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
 ))@
   </publishers>
   <buildWrappers>
-    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.11">
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding">
       <bindings>
         <org.jenkinsci.plugins.credentialsbinding.impl.FileBinding>
           <credentialsId>git-credentials</credentialsId>
