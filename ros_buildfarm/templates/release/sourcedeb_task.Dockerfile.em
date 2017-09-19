@@ -55,6 +55,8 @@ RUN chmod 600 /home/buildfarm/.git-credentials
 RUN chown buildfarm /home/buildfarm/.git-credentials
 
 USER buildfarm
+RUN git config --global credential.helper 'store'
+
 ENTRYPOINT ["sh", "-c"]
 @{
 cmds = [
