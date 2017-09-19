@@ -33,6 +33,8 @@ RUN echo "@today_str"
 RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y git python3-catkin-pkg-modules python3-rosdistro python3-yaml
 
 USER buildfarm
+RUN git config credential.helper --global 'store'
+COPY .git-credentials .git-credentials
 ENTRYPOINT ["sh", "-c"]
 @{
 cmds = [
