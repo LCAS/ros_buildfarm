@@ -34,7 +34,8 @@ RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y git python
 
 USER buildfarm
 RUN git config credential.helper --global 'store'
-COPY .git-credentials .git-credentials
+COPY .git-credentials /home/buildfarm/.git-credentials
+RUN chmod 600 /home/buildfarm/.git-credentials
 ENTRYPOINT ["sh", "-c"]
 @{
 cmds = [
