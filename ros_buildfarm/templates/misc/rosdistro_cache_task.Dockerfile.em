@@ -33,7 +33,7 @@ RUN echo "@today_str"
 RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y git python3-catkin-pkg-modules python3-rosdistro python3-yaml
 
 USER buildfarm
-RUN git config credential.helper --global 'store'
+RUN git config --global credential.helper 'store'
 COPY .git-credentials /home/buildfarm/.git-credentials
 RUN chmod 600 /home/buildfarm/.git-credentials
 ENTRYPOINT ["sh", "-c"]
