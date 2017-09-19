@@ -97,6 +97,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
         '',
         'echo "# BEGIN SECTION: Build Dockerfile - generate sourcedeb"',
         'cd $WORKSPACE/docker_sourcedeb',
+        'cp -L $GIT_CREDENTIALS $WORKSPACE/docker_sourcedeb/.git-credentials',
         'python3 -u $WORKSPACE/ros_buildfarm/scripts/misc/docker_pull_baseimage.py',
         'docker build --force-rm -t sourcedeb.%s_%s_%s_%s .' % (rosdistro_name, os_name, os_code_name, pkg_name),
         'echo "# END SECTION"',
@@ -171,6 +172,14 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
 ))@
   </publishers>
   <buildWrappers>
+    <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper plugin="credentials-binding@1.11">
+      <bindings>
+        <org.jenkinsci.plugins.credentialsbinding.impl.FileBinding>
+          <credentialsId>git-credentials</credentialsId>
+          <variable>GIT_CREDENTIALS</variable>
+        </org.jenkinsci.plugins.credentialsbinding.impl.FileBinding>
+      </bindings>
+    </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
 @[if timeout_minutes is not None]@
 @(SNIPPET(
     'build-wrapper_build-timeout',
