@@ -56,6 +56,7 @@ RUN chown buildfarm /home/buildfarm/.git-credentials
 
 USER buildfarm
 RUN git config --global credential.helper 'store'
+RUN git config --global http.sslVerify false
 
 ENTRYPOINT ["sh", "-c"]
 @{
