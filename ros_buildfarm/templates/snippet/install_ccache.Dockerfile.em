@@ -9,5 +9,5 @@ RUN ln -s /usr/local/bin/ccache /usr/lib/ccache/cc
 RUN ln -s /usr/local/bin/ccache /usr/lib/ccache/g++
 RUN ln -s /usr/local/bin/ccache /usr/lib/ccache/gcc
 @[else]@
-RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache gcc build-essential
 @[end if]@
