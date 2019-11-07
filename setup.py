@@ -5,8 +5,14 @@ from setuptools import setup
 
 # Get a list of scripts to install
 scripts = []
-for root, _, filenames in os.walk('scripts'):
+for root, dirnames, filenames in os.walk('scripts'):
+    # don't install the wrapper scripts
+    # since they would overlay Python packages with the same name
+    if 'wrapper' in dirnames:
+        dirnames.remove('wrapper')
     for filename in filenames:
+        if not filename.endswith('.py'):
+            continue
         scripts.append(os.path.join(root, filename))
 
 # Get the long description out of the readme.md
@@ -15,7 +21,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
 
 kwargs = {
     'name': 'ros_buildfarm',
-    'version': '1.3.3-master',  # same version as in ros_buildfarm/__init__.py
+    'version': '2.0.1',  # same version as in ros_buildfarm/__init__.py
     'packages': find_packages(exclude=['test']),
     'scripts': scripts,
     'include_package_data': True,
@@ -37,7 +43,7 @@ kwargs = {
     'license': 'Apache 2.0',
 }
 
-if os.sys.version_info.major == 2:
+if os.sys.version_info[0] == 2:
     kwargs['install_requires'].append('configparser')
 
 if 'SKIP_PYTHON_MODULES' in os.environ:

@@ -112,9 +112,16 @@ def expand_template(template_name, data, options=None):
 
 
 def _add_helper_functions(data):
+    data['FILE'] = _get_file_content
     data['ESCAPE'] = _escape_value
     data['SNIPPET'] = _expand_snippet
     data['TEMPLATE'] = _expand_template
+
+
+def _get_file_content(filename):
+    path = get_template_path(filename)
+    with open(path, 'r') as h:
+        return h.read()
 
 
 def _escape_value(value):
@@ -149,14 +156,15 @@ def _expand_template(template_name, **kwargs):
     interpreter.invoke('afterInclude')
 
 
-def create_dockerfile(template_name, data, dockerfile_dir):
+def create_dockerfile(template_name, data, dockerfile_dir, verbose=True):
     data['template_name'] = template_name
     data['wrapper_scripts'] = get_wrapper_scripts()
     content = expand_template(template_name, data)
     dockerfile = os.path.join(dockerfile_dir, 'Dockerfile')
     print("Generating Dockerfile '%s':" % dockerfile)
-    for line in content.splitlines():
-        print(' ', line)
+    if verbose:
+        for line in content.splitlines():
+            print(' ', line)
     with open(dockerfile, 'w') as h:
         h.write(content)
 

@@ -27,23 +27,17 @@
   <triggers>
 @(SNIPPET(
     'trigger_timer',
-    spec='H * * * *',
+    spec='0 5 * * *',
 ))@
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
 @(SNIPPET(
-    'builder_system-groovy_check-free-disk-space-disabled-slaves',
+    'builder_system-groovy_check-for-failing-jobs',
+    ros_distribution=ros_distro
 ))@
   </builders>
-  <publishers>
-@(SNIPPET(
-    'publisher_mailer',
-    recipients=notification_emails,
-    dynamic_recipients=[],
-    send_to_individuals=False,
-))@
-  </publishers>
+  <publishers/>
   <buildWrappers>
 @(SNIPPET(
     'build-wrapper_timestamper',

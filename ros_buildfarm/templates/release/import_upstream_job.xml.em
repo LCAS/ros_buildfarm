@@ -1,16 +1,20 @@
 <project>
   <actions/>
-  <description>Generated at @ESCAPE(now_str) from template '@ESCAPE(template_name)'</description>
+  <description>
+    &lt;p&gt;
+      &lt;b&gt;This job should not be aborted since reprepro will likely leave lockfiles behind!&lt;/b&gt;
+    &lt;/p&gt;
+Generated at @ESCAPE(now_str) from template '@ESCAPE(template_name)'</description>
   <keepDependencies>false</keepDependencies>
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=100,
-    num_to_keep=100,
+    days_to_keep=365 * 3,
+    num_to_keep=1000,
 ))@
 @(SNIPPET(
     'property_job-priority',
-    priority=-1,
+    priority=20,
 ))@
 @(SNIPPET(
     'property_requeue-job',
@@ -22,7 +26,7 @@
             'type': 'string',
             'name': 'config_file',
             'description': 'A specific yaml file or files to use as reprepro_config arguments. The default is the ros_bootstrap config. If unset it defaults to aggregating all yaml files in the directory defined by upstream_config in reprepro-updater.ini(not recommended)',
-            'default_value': '/home/jenkins-slave/reprepro_config/ros_bootstrap.yaml',
+            'default_value': '/home/jenkins-agent/reprepro_config/ros_bootstrap.yaml',
         },
         {
             'type': 'boolean',

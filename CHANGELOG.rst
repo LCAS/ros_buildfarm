@@ -2,6 +2,113 @@
 Changelog for package ros_buildfarm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.0.1 (2018-04-30)
+------------------
+
+* Improvements
+
+  * use egrep to find repository components in arbitrary positions (`#532 <https://github.com/ros-infrastructure/ros_buildfarm/pull/532>`_)
+
+* Fixes
+
+  * revert "remove using the test_depend from binary jobs" introduced in 2.0.0 (`#540 <https://github.com/ros-infrastructure/ros_buildfarm/pull/540>`_)
+  * add missing import from future for Python 2 compatibility (`#537 <https://github.com/ros-infrastructure/ros_buildfarm/pull/537>`_)
+
+2.0.0 (2018-04-03)
+------------------
+This new major version requires the provisioned machines to be based on the updated `buildfarm_deployment` which is based on Ubuntu Xenial hosts with Java 8 and Jenkins up to version 2.89.x.
+Jenkins 2.107.x comes with additional changes which this version is not yet suitable for.
+
+* New features
+
+  * generate YAML files with build information (`#521 <https://github.com/ros-infrastructure/ros_buildfarm/pull/521>`_, `#522 <https://github.com/ros-infrastructure/ros_buildfarm/pull/522>`_)
+  * git clone with --recurse-submodules (`#515 <https://github.com/ros-infrastructure/ros_buildfarm/pull/515>`_)
+
+* Changes
+
+  * remove using the test_depend for binary jobs (`#534 <https://github.com/ros-infrastructure/ros_buildfarm/pull/534>`_)
+  * move all jobs that are at priority 40 down to 35 (`#500 <https://github.com/ros-infrastructure/ros_buildfarm/pull/500>`_)
+  * fix Debian revision (replace - with .) as of ROS Melodic and ROS 2 Bouncy (`#460 <https://github.com/ros-infrastructure/ros_buildfarm/pull/460>`_, `#512 <https://github.com/ros-infrastructure/ros_buildfarm/pull/512>`_)
+  * update plugin versions and configurations (`#477 <https://github.com/ros-infrastructure/ros_buildfarm/pull/477>`_, `#482 <https://github.com/ros-infrastructure/ros_buildfarm/pull/482>`_, `#486 <https://github.com/ros-infrastructure/ros_buildfarm/pull/486>`_)
+  * merge the changes for Xenial into master (`#480 <https://github.com/ros-infrastructure/ros_buildfarm/pull/480>`_)
+  * increase days_to_keep for some job types (`#481 <https://github.com/ros-infrastructure/ros_buildfarm/pull/481>`_)
+
+* Improvements
+
+  * add the mail publisher to the trigger_upload_repo_job (`#520 <https://github.com/ros-infrastructure/ros_buildfarm/pull/520>`_)
+  * document and use option canonical_base_url (`#517 <https://github.com/ros-infrastructure/ros_buildfarm/pull/517>`_)
+  * add artful and bionic to the short os names (`#493 <https://github.com/ros-infrastructure/ros_buildfarm/pull/493>`_)
+  * do not make job unstable if there are skipped tests (`#492 <https://github.com/ros-infrastructure/ros_buildfarm/pull/492>`_)
+  * add initial version of upload trigger job generators (`#474 <https://github.com/ros-infrastructure/ros_buildfarm/pull/474>`_)
+
+* Fixes
+
+  * do not generate a blocked-releases job for the first distro (`#533 <https://github.com/ros-infrastructure/ros_buildfarm/pull/533>`_)
+  * fix warning about duplicate apt repos (`#530 <https://github.com/ros-infrastructure/ros_buildfarm/pull/530>`_)
+  * don't set an empty ssh-agent wrapper on devel jobs (`#528 <https://github.com/ros-infrastructure/ros_buildfarm/pull/528>`_, `#531 <https://github.com/ros-infrastructure/ros_buildfarm/pull/531>`_)
+  * mount the shared jenkins hgcache to allow hg operations (`#526 <https://github.com/ros-infrastructure/ros_buildfarm/pull/526>`_)
+  * ignore the seccomp profile warning in docker info (`#527 <https://github.com/ros-infrastructure/ros_buildfarm/pull/527>`_)
+  * call super in JobValidationError to correcly print the error (`#524 <https://github.com/ros-infrastructure/ros_buildfarm/pull/524>`_)
+  * fix check for existing description tag (`#518 <https://github.com/ros-infrastructure/ros_buildfarm/pull/518>`_)
+  * install gnupg on newer Ubuntu (`#506 <https://github.com/ros-infrastructure/ros_buildfarm/pull/506>`_)
+  * use -d option to skip checking for build deps in source jobs on newer Ubuntu (`#505 <https://github.com/ros-infrastructure/ros_buildfarm/pull/505>`_)
+  * move old_releases sources before installing locales (`#504 <https://github.com/ros-infrastructure/ros_buildfarm/pull/504>`_)
+  * update list of EOL ubuntu distributions up to Zesty (`#503 <https://github.com/ros-infrastructure/ros_buildfarm/pull/503>`_)
+  * resolve catkin instead of assuming current rosdistro (`#501 <https://github.com/ros-infrastructure/ros_buildfarm/pull/501>`_)
+  * fix mercurial config (`#490 <https://github.com/ros-infrastructure/ros_buildfarm/pull/490>`_)
+  * fix config of created views if they have no jobs associated (`#483 <https://github.com/ros-infrastructure/ros_buildfarm/pull/483>`_)
+
+* Documentation
+
+  * point to the Buildfarm Discourse instead of the old SIG (`#499 <https://github.com/ros-infrastructure/ros_buildfarm/pull/499>`_)
+  * add delete views instructions (`#485 <https://github.com/ros-infrastructure/ros_buildfarm/pull/485>`_)
+
+1.4.1 (2017-08-30)
+------------------
+* Improvements
+
+  * increase limit of age and/or count for kept build logs for some jobs (`#471 <https://github.com/ros-infrastructure/ros_buildfarm/pull/471>`_)
+  * retry apt on corrupted package archive error (`#468 <https://github.com/ros-infrastructure/ros_buildfarm/pull/468>`_)
+  * improve docs to remove obsolete jobs (`#464 <https://github.com/ros-infrastructure/ros_buildfarm/issues/464>`_, `#473 <https://github.com/ros-infrastructure/ros_buildfarm/pull/473>`_)
+  * make Dockerfile template more flexible (`#463 <https://github.com/ros-infrastructure/ros_buildfarm/pull/463>`_)
+
+* Fixes
+
+  * use cloudfront mirror for all debian sources (`#467 <https://github.com/ros-infrastructure/ros_buildfarm/pull/467>`_)
+
+1.4.0 (2017-07-12)
+------------------
+* New features
+
+  * add new jobs to display the failing jobs by ROS distro (`#454 <https://github.com/ros-infrastructure/ros_buildfarm/issues/454>`_)
+  * add nightly job to trigger missed jobs (`#451 <https://github.com/ros-infrastructure/ros_buildfarm/issues/451>`_)
+  * add option to trigger only not-failed jobs (`#446 <https://github.com/ros-infrastructure/ros_buildfarm/issues/446>`_)
+  * use Xenial Docker images instead of Trusty (`#444 <https://github.com/ros-infrastructure/ros_buildfarm/issues/444>`_, `#445 <https://github.com/ros-infrastructure/ros_buildfarm/issues/445>`_)
+  * add ORPHANED that shows both end-of-life and unmaintaned (`#439 <https://github.com/ros-infrastructure/ros_buildfarm/issues/439>`_)
+  * support OR syntax as well as regex (`#435 <https://github.com/ros-infrastructure/ros_buildfarm/issues/435>`_, `#436 <https://github.com/ros-infrastructure/ros_buildfarm/issues/436>`_)
+  * add config option to enable / disable sending notification emails for pull request jobs (`#432 <https://github.com/ros-infrastructure/ros_buildfarm/issues/432>`_)
+
+* Improvements
+
+  * print blank lines around error message (`#459 <https://github.com/ros-infrastructure/ros_buildfarm/issues/459>`_)
+  * add 'Failed to stat' to the list of apt known errors (`#458 <https://github.com/ros-infrastructure/ros_buildfarm/issues/458>`_)
+  * catch another apt hiccup (`#452 <https://github.com/ros-infrastructure/ros_buildfarm/issues/452>`_)
+  * improve performance to generate maintenance jobs (`#450 <https://github.com/ros-infrastructure/ros_buildfarm/issues/450>`_)
+  * show parameter of reconfigure jobs in build description (`#449 <https://github.com/ros-infrastructure/ros_buildfarm/issues/449>`_)
+  * invert logic for future proofing (`#443 <https://github.com/ros-infrastructure/ros_buildfarm/issues/443>`_)
+  * update description of import_upstream job (`#442 <https://github.com/ros-infrastructure/ros_buildfarm/issues/442>`_)
+  * use higher prio for import_upstream job (`#441 <https://github.com/ros-infrastructure/ros_buildfarm/issues/441>`_)
+  * change color of "unmaintained" from yellow to orange (`#440 <https://github.com/ros-infrastructure/ros_buildfarm/issues/440>`_)
+  * add title to input fields (`#436 <https://github.com/ros-infrastructure/ros_buildfarm/issues/436>`_)
+  * improve performance to collect recursive dependencies (`#430 <https://github.com/ros-infrastructure/ros_buildfarm/issues/430>`_)
+
+* Fixes
+
+  * use cloudfront.debian.net rather than deb.debian.org (`#461 <https://github.com/ros-infrastructure/ros_buildfarm/issues/461>`_)
+  * avoid installing wrapper scripts (`#457 <https://github.com/ros-infrastructure/ros_buildfarm/issues/457>`_)
+  * check version in a way that supports Python 2.6 (`#438 <https://github.com/ros-infrastructure/ros_buildfarm/issues/438>`_)
+  * explicitly reschedule aborted builds (`#437 <https://github.com/ros-infrastructure/ros_buildfarm/issues/437>`_)
+
 1.3.2 (2017-04-26)
 ------------------
 * modify compare page to list packages rather than repositories (`#425 <https://github.com/ros-infrastructure/ros_buildfarm/pull/425>`_)

@@ -9,7 +9,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=180,
+    days_to_keep=730,
     num_to_keep=30,
 ))@
 @(SNIPPET(
@@ -123,7 +123,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
     'builder_shell',
     script='\n'.join([
         'if [ "$skip_cleanup" = "false" ]; then',
-        'echo "# BEGIN SECTION: Clean up to save disk space on slaves"',
+        'echo "# BEGIN SECTION: Clean up to save disk space on agents"',
         'rm -fr sourcedeb/source',
         'echo "# END SECTION"',
         'fi',

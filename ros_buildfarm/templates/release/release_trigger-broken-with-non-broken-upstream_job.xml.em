@@ -5,12 +5,12 @@
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=365,
+    days_to_keep=730,
     num_to_keep=30,
 ))@
 @(SNIPPET(
     'property_job-priority',
-    priority=40,
+    priority=35,
 ))@
 @(SNIPPET(
     'property_requeue-job',

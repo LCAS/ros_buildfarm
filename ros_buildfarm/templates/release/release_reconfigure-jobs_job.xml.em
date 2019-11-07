@@ -39,7 +39,7 @@
     refspec=None,
 ))@
   <scmCheckoutRetryCount>2</scmCheckoutRetryCount>
-  <assignedNode>slave_on_master</assignedNode>
+  <assignedNode>agent_on_master</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
@@ -52,6 +52,17 @@
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>
+@(SNIPPET(
+    'builder_system-groovy',
+    command=
+"""// USE PARAMETER FOR BUILD DESCRIPTION
+package_names = build.buildVariableResolver.resolve('package_names')
+if (package_names) {
+  build.setDescription(package_names)
+}
+""",
+    script_file=None,
+))@
 @(SNIPPET(
     'builder_shell_docker-info',
 ))@

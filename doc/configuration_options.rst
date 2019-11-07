@@ -107,7 +107,7 @@ Description of common options
   The job priorities of the administrative jobs are hard coded:
 
   * ``rosdistro-cache`` jobs: 10
-  * ``check_slaves`` job: 20
+  * ``check_agents`` job: 20
   * ``dashboard`` job: 20
   * ``*-status-page`` jobs: 20
   * ``reconfigure-jobs`` jobs: 30
@@ -163,11 +163,11 @@ The following options are valid in version ``2`` (beside the generic options):
   For ROS 1 this flag must always be ``true``.
 
 * ``jenkins_binary_job_label``: the label expression for *binary* jobs
-  (default: ``buildslave || <ROSDISTRO_NAME>_binarydeb_<BUILD_FILE_NAME>``).
+  (default: ``buildagent || <ROSDISTRO_NAME>_binarydeb_<BUILD_FILE_NAME>``).
 * ``jenkins_binary_job_priority``: the job priority of *binary* jobs.
 * ``jenkins_binary_job_timeout``: the job timeout for *binary* jobs.
 * ``jenkins_source_job_label``: the label expression for *source* jobs
-  (default: ``buildslave || <ROSDISTRO_NAME>_sourcedeb``).
+  (default: ``buildagent || <ROSDISTRO_NAME>_sourcedeb``).
 * ``jenkins_source_job_priority``: the job priority of *source* jobs.
 * ``jenkins_source_job_timeout``: the job timeout for *source* jobs.
 
@@ -215,7 +215,7 @@ The following options are valid in version ``2`` (beside the generic options):
 * ``jenkins_commit_job_priority``: the job priority of *devel* jobs.
 * ``jenkins_job_label``: the label expression for both *devel* and
   *pull request* jobs (default:
-  ``buildslave || <ROSDISTRO_NAME>_devel_<BUILD_FILE_NAME>``).
+  ``buildagent || <ROSDISTRO_NAME>_devel_<BUILD_FILE_NAME>``).
 * ``jenkins_job_timeout``: the job timeout for both *devel* and *pull request*
   jobs.
 * ``jenkins_pull_request_job_priority``: the job priority of *pull request*
@@ -272,9 +272,26 @@ The file format is specified by the following information:
 
 The following options are valid in version ``2`` (beside the generic options):
 
+* ``canonical_base_url``: The canonical base URL of the generated documentation.
+  If set a canonical URL will be added to all HTML files in the form of
+  ``<base-url>/<distro-name>/api/<package-name>``.
+* ``documentation_type``: The option distinguishes different documentation
+  jobs. The following are valid values and describe their semantic:
+
+  * ``rosdoc_lite`` (default): Generates documentation jobs for each
+    repository. Each job invokes ``rosdoc_lite`` for all packages in the
+    repository.
+  * ``released_manifest``: Generates some minimal documentation for released
+    packages which don't have their own documentation job.
+  * ``make_target``: Invokes ``make html`` in the ``doc`` subdirectory for a
+    set of repositories. See ``doc_repositories`` to configure the
+    repositories.
+
+* ``doc_repositories``: a list of repository URLs (only used with the
+  ``documentation_type`` set to ``make_target``).
 * ``jenkins_job_priority``: the job priority of *doc* jobs.
 * ``jenkins_job_label``: the label expression for both *doc* jobs (default:
-  ``buildslave || <ROSDISTRO_NAME>_doc_<BUILD_FILE_NAME>``).
+  ``buildagent || <ROSDISTRO_NAME>_doc_<BUILD_FILE_NAME>``).
 * ``jenkins_job_timeout``: the job timeout for *doc* jobs.
 
 * ``notifications``: a dictionary with the following keys:
@@ -316,7 +333,7 @@ The following options are valid in version ``2`` (beside the generic options):
   The default is ``/var/repos/docs``.
 * ``upload_user``: The username to use to rsync the resultant files.
   This should match the config ``upload::docs::user`` in the buildfarm_deployment_config.
-  The default is ``jenkins-slave``
+  The default is ``jenkins-agent``
 
 The following options are valid as keys in the ``_config`` dict under
 ``targets``:

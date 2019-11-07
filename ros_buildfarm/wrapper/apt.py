@@ -23,6 +23,7 @@ def main(argv=sys.argv[1:]):
     max_tries = 10
     known_error_strings = [
         'Failed to fetch',
+        'Failed to stat',
         'Hash Sum mismatch',
         'Unable to locate package',
         'is not what the server reported',
@@ -63,6 +64,8 @@ def call_apt_update_install_clean(
                 'maybe run apt update',
                 'The following packages cannot be authenticated!',
                 'Unable to locate package',
+                'has no installation candidate',
+                'corrupted package archive',
             ]
             rc, known_error_conditions = \
                 call_apt(
@@ -90,8 +93,10 @@ def call_apt_update_install_clean(
                 # retry with update command
                 continue
 
+            print('')
             print('Invocation failed due to the following known error '
                   'conditions: ' + ', '.join(known_error_conditions))
+            print('')
             if tries < max_tries:
                 sleep_time = 5
                 print("Reinvoke 'apt install' after sleeping %s seconds" %

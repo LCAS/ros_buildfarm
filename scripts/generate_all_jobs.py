@@ -15,8 +15,8 @@
 # limitations under the License.
 
 import argparse
+import imp
 import os
-import subprocess
 import sys
 
 from ros_buildfarm.argument import add_argument_config_url
@@ -72,7 +72,7 @@ def main(argv=sys.argv[1:]):
     configure_view(
         jenkins, 'Queue', filter_queue=False, dry_run=not args.commit)
 
-    generate_check_slaves_job(args.config_url, dry_run=not args.commit)
+    generate_check_agents_job(args.config_url, dry_run=not args.commit)
 
     if not args.ros_distro_names:
         generate_dashboard_job(args.config_url, dry_run=not args.commit)
@@ -91,6 +91,9 @@ def main(argv=sys.argv[1:]):
         if not args.skip_rosdistro_cache_job:
             generate_rosdistro_cache_job(
                 args.config_url, ros_distro_name, dry_run=not args.commit)
+
+        generate_failing_jobs_job(
+            args.config_url, ros_distro_name, dry_run=not args.commit)
 
         release_build_files = get_release_build_files(config, ros_distro_name)
         for release_build_name in release_build_files.keys():
@@ -130,13 +133,13 @@ def main(argv=sys.argv[1:]):
             generate_release_compare_page_job(
                 args.config_url, ros_distro_name, ros_distro_names[:index],
                 dry_run=not args.commit)
-        generate_blocked_releases_page_job(
-            args.config_url, ros_distro_name, dry_run=not args.commit)
+            generate_blocked_releases_page_job(
+                args.config_url, ros_distro_name, dry_run=not args.commit)
 
 
-def generate_check_slaves_job(config_url, dry_run=False):
+def generate_check_agents_job(config_url, dry_run=False):
     cmd = [
-        _resolve_script('misc', 'generate_check_slaves_job.py'),
+        _resolve_script('misc', 'generate_check_agents_job.py'),
         config_url,
     ]
     if dry_run:
@@ -157,6 +160,17 @@ def generate_dashboard_job(config_url, dry_run=False):
 def generate_rosdistro_cache_job(config_url, ros_distro_name, dry_run=False):
     cmd = [
         _resolve_script('misc', 'generate_rosdistro_cache_job.py'),
+        config_url,
+        ros_distro_name,
+    ]
+    if dry_run:
+        cmd.append('--dry-run')
+    _check_call(cmd)
+
+
+def generate_failing_jobs_job(config_url, ros_distro_name, dry_run=False):
+    cmd = [
+        _resolve_script('misc', 'generate_failing_jobs_job.py'),
         config_url,
         ros_distro_name,
     ]
@@ -296,7 +310,10 @@ def _check_call(cmd):
     print('')
     basepath = os.path.dirname(__file__)
     cmd[0] = os.path.join(basepath, cmd[0])
-    subprocess.check_call(cmd)
+    module = imp.load_source('script', cmd[0])
+    rc = module.main(cmd[1:])
+    if rc:
+        sys.exit(rc)
     print('')
 
 

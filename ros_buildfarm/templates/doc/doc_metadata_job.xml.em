@@ -5,7 +5,7 @@
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=100,
+    days_to_keep=365,
     num_to_keep=100,
 ))@
 @[if job_priority is not None]@
@@ -43,7 +43,7 @@
 @(SNIPPET(
     'builder_check-docker',
     os_name='ubuntu',
-    os_code_name='trusty',
+    os_code_name='xenial',
     arch='amd64',
 ))@
 @(SNIPPET(

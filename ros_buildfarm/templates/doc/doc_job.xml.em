@@ -10,7 +10,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=100,
+    days_to_keep=365,
     num_to_keep=100,
 ))@
 @[if github_url]@
@@ -101,7 +101,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
 @(SNIPPET(
     'builder_shell',
     script='\n'.join([
-        'echo "# BEGIN SECTION: rsync (most of) the rosdoc_index to slave"',
+        'echo "# BEGIN SECTION: rsync (most of) the rosdoc_index to agent"',
         'rm -fr rosdoc_index',
         'mkdir rosdoc_index',
         '# since rsync fails if the source folder does not exist we need to check it before',
@@ -127,6 +127,12 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
     'builder_shell_key-files',
     script_generating_key_files=script_generating_key_files,
 ))@
+@{
+if doc_repo_spec.type == 'hg':
+    hgcache_mount_arg = ' -v $HOME/hgcache:$HOME/hgcache '
+else:
+    hgcache_mount_arg = ''
+}@
 @(SNIPPET(
     'builder_shell',
     script='\n'.join([
@@ -183,6 +189,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
         ' -v $WORKSPACE/catkin_workspace:/tmp/catkin_workspace' +
         ' -v $WORKSPACE/generated_documentation:/tmp/generated_documentation' +
         ' -v $WORKSPACE/docker_doc:/tmp/docker_doc' +
+        hgcache_mount_arg +
         ' doc_task_generation.%s_%s' % (rosdistro_name, doc_repo_spec.name.lower()),
         'echo "# END SECTION"',
     ]),
@@ -225,7 +232,7 @@ but disabled since the package is blacklisted (or not whitelisted) in the config
     'builder_shell',
     script='\n'.join([
         'if [ "$skip_cleanup" = "false" ]; then',
-        'echo "# BEGIN SECTION: Clean up to save disk space on slaves"',
+        'echo "# BEGIN SECTION: Clean up to save disk space on agents"',
         'rm -fr catkin_workspace/build_isolated',
         'rm -fr catkin_workspace/devel_isolated',
         'rm -fr catkin_workspace/install_isolated',

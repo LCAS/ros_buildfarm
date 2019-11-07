@@ -5,12 +5,12 @@
   <properties>
 @(SNIPPET(
     'property_log-rotator',
-    days_to_keep=365,
+    days_to_keep=730,
     num_to_keep=100,
 ))@
 @(SNIPPET(
     'property_job-priority',
-    priority=40,
+    priority=35,
 ))@
 @(SNIPPET(
     'property_requeue-job',
@@ -22,10 +22,22 @@
           <description/>
           <choices class="java.util.Arrays$ArrayList">
             <a class="string-array">
-              <string>--missing-only --source-only</string>
-              <string>--missing-only</string>
-              <string>--source-only</string>
-              <string> </string>
+@{
+missed_jobs_default = '--missing-only --not-failed-only'
+choices = [
+    '--missing-only --source-only',
+    missed_jobs_default,
+    '--missing-only',
+    '--source-only',
+    ' ',
+]
+if missed_jobs:
+    choices.remove(missed_jobs_default)
+    choices.insert(0, missed_jobs_default)
+}@
+@[for choice in choices]@
+              <string>@choice</string>
+@[end for]@
             </a>
           </choices>
         </hudson.model.ChoiceParameterDefinition>
@@ -40,16 +52,23 @@
     refspec=None,
 ))@
   <scmCheckoutRetryCount>2</scmCheckoutRetryCount>
-  <assignedNode>slave_on_master</assignedNode>
+  <assignedNode>agent_on_master</assignedNode>
   <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
+@[if not missed_jobs]@
 @(SNIPPET(
     'trigger_timer',
     spec='*/15 * * * *',
 ))@
+@[else]@
+@(SNIPPET(
+    'trigger_timer',
+    spec='0 1 * * *',
+))@
+@[end if]@
   </triggers>
   <concurrentBuild>false</concurrentBuild>
   <builders>

@@ -1,6 +1,6 @@
 # generated from @template_name
 
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 
 VOLUME ["/var/cache/apt/archives"]
 
@@ -18,7 +18,7 @@ RUN useradd -u @uid -m buildfarm
     distribution_repository_keys=distribution_repository_keys,
     distribution_repository_urls=distribution_repository_urls,
     os_name='ubuntu',
-    os_code_name='trusty',
+    os_code_name='xenial',
     add_source=False,
 ))@
 
@@ -29,6 +29,12 @@ RUN useradd -u @uid -m buildfarm
 
 # automatic invalidation once every day
 RUN echo "@today_str"
+
+@(TEMPLATE(
+    'snippet/install_python3.Dockerfile.em',
+    os_name='ubuntu',
+    os_code_name='xenial',
+))@
 
 RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y python3-empy python3-pip python3-rosdistro-modules python3-yaml
 RUN pip3 install jenkinsapi
@@ -48,5 +54,7 @@ if missing_only:
     cmd += ' --missing-only'
 if source_only:
     cmd += ' --source-only'
+if not_failed_only:
+    cmd += ' --not-failed-only'
 }@
 CMD ["@(cmd.replace('"', '\\"'))"]

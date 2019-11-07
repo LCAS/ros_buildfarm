@@ -31,7 +31,7 @@ class JobValidationError(Exception):
     """
 
     def __init__(self, message):
-        self.message = message
+        super(JobValidationError, self).__init__(message)
 
 
 next_scope_id = 1
@@ -267,6 +267,8 @@ def get_short_os_name(os_name):
 
 def get_short_os_code_name(os_code_name):
     os_code_name_mappings = {
+        'artful': 'A',
+        'bionic': 'B',
         'jessie': 'J',
         'saucy': 'S',
         'stretch': 'S',
@@ -503,7 +505,7 @@ def get_node_label(config_job_label, default_label=None):
 
 
 def get_default_node_label(additional_label=None):
-    label = 'buildslave'
+    label = 'buildagent'
     if additional_label:
         label += ' || ' + additional_label
     return label
