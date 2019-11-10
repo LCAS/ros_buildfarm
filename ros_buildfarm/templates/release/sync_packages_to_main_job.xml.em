@@ -37,9 +37,9 @@
     script='\n'.join([
         'echo "# BEGIN SECTION: sync packages to main repo"',
         'export PYTHONPATH=$WORKSPACE/reprepro-updater/src:$PYTHONPATH',
-        'curl -O https://raw.githubusercontent.com/LCAS/rosdistro/master/kinetic/filter_list_restricted.txt',
+        'curl -f -O https://raw.githubusercontent.com/LCAS/rosdistro/master/%s/filter_list_restricted.txt || (echo -n "" > filter_list_restricted.txt)' % rosdistro_name,
         'sed \'s/$/ deinstall/\' < filter_list_restricted.txt > /var/repos/ubuntu/main/conf/excludefile',
-        'python -u $WORKSPACE/reprepro-updater/scripts/sync_ros_packages.py ubuntu_main --upstream-ros ubuntu_testing -r kinetic -c -f "install excludefile"',
+        'python -u $WORKSPACE/reprepro-updater/scripts/sync_ros_packages.py ubuntu_main --upstream-ros ubuntu_testing -a amd64 -r %s -c -f "install excludefile"' % rosdistro_name,
         'echo "# END SECTION"',
     ]),
 ))@
