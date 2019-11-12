@@ -29,6 +29,7 @@
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <authToken>lcas</authToken>
   <triggers/>
   <concurrentBuild>false</concurrentBuild>
   <builders>
