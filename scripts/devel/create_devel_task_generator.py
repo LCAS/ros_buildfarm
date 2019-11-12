@@ -20,12 +20,14 @@ import sys
 
 from apt import Cache
 from catkin_pkg.packages import find_packages
+from ros_buildfarm.argument import add_argument_build_tool
 from ros_buildfarm.argument import \
     add_argument_distribution_repository_key_files
 from ros_buildfarm.argument import add_argument_distribution_repository_urls
 from ros_buildfarm.argument import add_argument_dockerfile_dir
+from ros_buildfarm.argument import add_argument_env_vars
+from ros_buildfarm.argument import add_argument_ros_version
 from ros_buildfarm.common import get_binary_package_versions
-from ros_buildfarm.common import get_debian_package_name
 from ros_buildfarm.common import get_distribution_repository_keys
 from ros_buildfarm.common import get_user_id
 from ros_buildfarm.templates import create_dockerfile
@@ -60,6 +62,9 @@ def main(argv=sys.argv[1:]):
         help="The architecture (e.g. 'amd64')")
     add_argument_distribution_repository_urls(parser)
     add_argument_distribution_repository_key_files(parser)
+    add_argument_build_tool(parser, required=True)
+    add_argument_ros_version(parser)
+    add_argument_env_vars(parser)
     add_argument_dockerfile_dir(parser)
     parser.add_argument(
         '--testing',
@@ -68,12 +73,23 @@ def main(argv=sys.argv[1:]):
              'and instead of installing the tests are ran')
     args = parser.parse_args(argv)
 
+    condition_context = {}
+    for t in args.env_vars:
+        parts = t.split('=', 1)
+        assert len(parts) == 2, '--env-vars argument lacks equal sign: ' + t
+        condition_context[parts[0]] = parts[1]
+    condition_context['ROS_DISTRO'] = args.rosdistro_name
+    condition_context['ROS_VERSION'] = args.ros_version
+
     # get direct build dependencies
     pkgs = {}
     for workspace_root in args.workspace_root:
         source_space = os.path.join(workspace_root, 'src')
         print("Crawling for packages in workspace '%s'" % source_space)
-        pkgs.update(find_packages(source_space))
+        ws_pkgs = find_packages(source_space)
+        for pkg in ws_pkgs.values():
+            pkg.evaluate_conditions(condition_context)
+        pkgs.update(ws_pkgs)
 
     pkg_names = [pkg.name for pkg in pkgs.values()]
     print("Found the following packages:")
@@ -97,7 +113,15 @@ def main(argv=sys.argv[1:]):
         'build-essential',
         'python3',
     ]
-    if 'catkin' not in pkg_names:
+    if args.build_tool == 'colcon':
+        debian_pkg_names += [
+            'python3-colcon-metadata',
+            'python3-colcon-output',
+            'python3-colcon-parallel-executor',
+            'python3-colcon-ros',
+            'python3-colcon-test-result',
+        ]
+    elif 'catkin' not in pkg_names:
         debian_pkg_names += resolve_names(['catkin'], **context)
     print('Always install the following generic dependencies:')
     for debian_pkg_name in sorted(debian_pkg_names):
@@ -128,6 +152,15 @@ def main(argv=sys.argv[1:]):
     if args.testing:
         debian_pkg_names += order_dependencies(debian_pkg_names_testing)
 
+    mapped_workspaces = [
+        (workspace_root, '/tmp/ws%s' % (index if index > 1 else ''))
+        for index, workspace_root in enumerate(args.workspace_root, 1)]
+
+    parent_result_space = []
+    if len(args.workspace_root) > 1:
+        parent_result_space = ['/opt/ros/%s' % args.rosdistro_name] + \
+            [mapping[1] for mapping in mapped_workspaces[:-1]]
+
     # generate Dockerfile
     data = {
         'os_name': args.os_name,
@@ -143,11 +176,18 @@ def main(argv=sys.argv[1:]):
 
         'uid': get_user_id(),
 
+        'build_tool': args.build_tool,
+        'ros_version': args.ros_version,
+
+        'build_environment_variables': args.env_vars,
+
         'dependencies': debian_pkg_names,
         'dependency_versions': debian_pkg_versions,
+        'install_lists': [],
 
         'testing': args.testing,
-        'prerelease_overlay': len(args.workspace_root) > 1,
+        'workspace_root': mapped_workspaces[-1][1],
+        'parent_result_space': parent_result_space,
     }
     create_dockerfile(
         'devel/devel_task.Dockerfile.em', data, args.dockerfile_dir)
@@ -157,7 +197,8 @@ def main(argv=sys.argv[1:]):
         os.path.join(os.path.dirname(__file__), '..', '..'))
     print('Mount the following volumes when running the container:')
     print('  -v %s:/tmp/ros_buildfarm:ro' % ros_buildfarm_basepath)
-    print('  -v %s:/tmp/catkin_workspace' % args.workspace_root[-1])
+    for mapping in mapped_workspaces:
+        print('  -v %s:%s' % mapping)
 
 
 def get_dependencies(pkgs, label, get_dependencies_callback):
@@ -175,7 +216,9 @@ def get_dependencies(pkgs, label, get_dependencies_callback):
 
 
 def _get_build_and_recursive_run_dependencies(pkg, pkgs):
-    depends = pkg.build_depends + pkg.buildtool_depends
+    depends = [
+        d for d in pkg.build_depends + pkg.buildtool_depends
+        if d.evaluated_condition is not False]
     # include recursive run dependencies on other pkgs in the workspace
     # if pkg A in the workspace build depends on pkg B in the workspace
     # then the recursive run dependencies of pkg B need to be installed
@@ -192,8 +235,11 @@ def _get_build_and_recursive_run_dependencies(pkg, pkgs):
         run_depends_in_pkgs.remove(pkg_name)
 
         # append run dependencies
-        run_depends = pkg.build_export_depends + \
-            pkg.buildtool_export_depends + pkg.exec_depends
+        run_depends = [
+            d for d in
+            pkg.build_export_depends + pkg.buildtool_export_depends +
+            pkg.exec_depends
+            if d.evaluated_condition is not False]
         depends += run_depends
 
         # consider recursive dependencies
@@ -204,8 +250,11 @@ def _get_build_and_recursive_run_dependencies(pkg, pkgs):
 
 
 def _get_run_and_test_dependencies(pkg, pkgs):
-    return pkg.build_export_depends + pkg.buildtool_export_depends + \
+    return [
+        d for d in
+        pkg.build_export_depends + pkg.buildtool_export_depends +
         pkg.exec_depends + pkg.test_depends
+        if d.evaluated_condition is not False]
 
 
 def initialize_resolver(rosdistro_name, os_name, os_code_name):

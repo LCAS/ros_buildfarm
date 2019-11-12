@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -36,8 +36,13 @@ RUN echo "@today_str"
     os_code_name='xenial',
 ))@
 
-RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y make python-catkin-pkg-modules python-dateutil python-pip python-wstool python-yaml
-RUN pip install -U catkin-sphinx sphinx
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y make python-pip
+@[if install_apt_packages]@
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y @(' '.join(install_apt_packages))
+@[end if]@
+@[if install_pip_packages]@
+RUN pip install -U @(' '.join(install_pip_packages))
+@[end if]@
 
 USER buildfarm
 

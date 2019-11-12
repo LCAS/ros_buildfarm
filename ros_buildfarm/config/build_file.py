@@ -15,8 +15,14 @@
 
 class BuildFile(object):
 
-    def __init__(self, name, data):
+    def __init__(self, name, data):  # noqa: D107
         self.name = name
+
+        self.build_environment_variables = None
+        if 'build_environment_variables' in data:
+            self.build_environment_variables = \
+                data['build_environment_variables']
+            assert(isinstance(self.build_environment_variables, dict))
 
         self.notify_emails = []
         self.notify_maintainers = None
@@ -48,9 +54,8 @@ class BuildFile(object):
             self.tag_blacklist = data['tag_blacklist']
             assert isinstance(self.tag_blacklist, list)
 
-        assert 'targets' in data
         self.targets = {}
-        for os_name in data['targets'].keys():
+        for os_name in data.get('targets', {}).keys():
             if os_name == '_config':
                 continue
             self.targets[os_name] = {}

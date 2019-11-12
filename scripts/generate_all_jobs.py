@@ -20,6 +20,7 @@ import os
 import sys
 
 from ros_buildfarm.argument import add_argument_config_url
+from ros_buildfarm.config import get_ci_build_files
 from ros_buildfarm.config import get_doc_build_files
 from ros_buildfarm.config import get_index
 from ros_buildfarm.config import get_release_build_files
@@ -57,6 +58,13 @@ def main(argv=sys.argv[1:]):
     print('')
 
     config = get_index(args.config_url)
+    if args.config_url.startswith('file:'):
+        print(
+            'WARNING: Local file system path used for configuration. ',
+            'Configuration will not be accessible to jobs during execution. ',
+            'Consider  using a web(http) hosted configuration repository.',
+            file=sys.stderr)
+
     ros_distro_names = sorted(config.distributions.keys())
 
     invalid_ros_distro_name = [
@@ -110,6 +118,12 @@ def main(argv=sys.argv[1:]):
                 args.config_url, ros_distro_name, source_build_name,
                 dry_run=not args.commit)
 
+        ci_build_files = get_ci_build_files(config, ros_distro_name)
+        for ci_build_name in ci_build_files.keys():
+            generate_ci_maintenance_jobs(
+                args.config_url, ros_distro_name, ci_build_name,
+                dry_run=not args.commit)
+
         doc_build_files = get_doc_build_files(config, ros_distro_name)
         for doc_build_name, doc_build_file in doc_build_files.items():
             if doc_build_file.documentation_type == DOC_TYPE_ROSDOC:
@@ -134,6 +148,8 @@ def main(argv=sys.argv[1:]):
                 args.config_url, ros_distro_name, ros_distro_names[:index],
                 dry_run=not args.commit)
             generate_blocked_releases_page_job(
+                args.config_url, ros_distro_name, dry_run=not args.commit)
+            generate_blocked_source_entries_page_job(
                 args.config_url, ros_distro_name, dry_run=not args.commit)
 
 
@@ -228,6 +244,18 @@ def generate_blocked_releases_page_job(
     _check_call(cmd)
 
 
+def generate_blocked_source_entries_page_job(
+        config_url, ros_distro_name, dry_run=False):
+    cmd = [
+        _resolve_script('status', 'generate_blocked_source_entries_page_job.py'),
+        config_url,
+        ros_distro_name,
+    ]
+    if dry_run:
+        cmd.append('--dry-run')
+    _check_call(cmd)
+
+
 def generate_release_maintenance_jobs(
         config_url, ros_distro_name, release_build_name, dry_run=False):
     cmd = [
@@ -235,6 +263,18 @@ def generate_release_maintenance_jobs(
         config_url,
         ros_distro_name,
         release_build_name,
+    ]
+    if dry_run:
+        cmd.append('--dry-run')
+    _check_call(cmd)
+
+
+def generate_ci_maintenance_jobs(
+        config_url, ros_distro_name, ci_build_name, dry_run=False):
+    cmd = [
+        _resolve_script('ci', 'generate_ci_maintenance_jobs.py'),
+        config_url,
+        ros_distro_name,
     ]
     if dry_run:
         cmd.append('--dry-run')

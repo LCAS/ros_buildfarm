@@ -22,7 +22,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -54,13 +54,38 @@ RUN echo "@today_str"
     os_code_name=os_code_name,
 ))@
 
+@[if build_tool == 'colcon']@
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y python3-pip
+@# colcon-core.package_identification.python needs at least version 30.3.0
+RUN pip3 install -U setuptools
+@[end if]@
+@[if ros_version == 2]@
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ros-@(rosdistro_name)-ros-workspace
+@[end if]@
 RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache build-essential gcc
+
+@(TEMPLATE(
+    'snippet/set_environment_variables.Dockerfile.em',
+    environment_variables=build_environment_variables,
+))@
 
 @(TEMPLATE(
     'snippet/install_dependencies.Dockerfile.em',
     dependencies=dependencies,
     dependency_versions=dependency_versions,
 ))@
+
+@(TEMPLATE(
+    'snippet/install_dependencies_from_file.Dockerfile.em',
+    install_lists=install_lists,
+))@
+
+# After all dependencies are installed, update ccache symlinks.
+# This command is supposed to be invoked whenever a new compiler is installed
+# but that isn't happening. So we invoke it here to make sure all compilers are
+# picked up.
+# TODO(nuclearsandwich) add link to Debian bug report when one is opened.
+RUN which update-ccache-symlinks >/dev/null 2>&1 && update-ccache-symlinks
 
 USER buildfarm
 ENTRYPOINT ["sh", "-c"]
@@ -70,24 +95,17 @@ cmd = \
     ' PYTHONPATH=/tmp/ros_buildfarm:$PYTHONPATH python3 -u'
 if not testing:
     cmd += \
-        ' /tmp/ros_buildfarm/scripts/devel/catkin_make_isolated_and_install.py' + \
+        ' /tmp/ros_buildfarm/scripts/devel/build_and_install.py' + \
         ' --rosdistro-name %s --clean-before' % rosdistro_name
 else:
     cmd += \
-        ' /tmp/ros_buildfarm/scripts/devel/catkin_make_isolated_and_test.py' + \
+        ' /tmp/ros_buildfarm/scripts/devel/build_and_test.py' + \
         ' --rosdistro-name %s' % rosdistro_name
-if not prerelease_overlay:
-    cmd += \
-        ' --workspace-root /tmp/catkin_workspace'
-else:
-    parent_result_spaces = [
-        # also specify /opt/ros in case the install location has no setup files
-        # e.g. if the workspace contains no packages
-        '/opt/ros/%s' % rosdistro_name,
-        '/tmp/catkin_workspace/install_isolated',
-    ]
-    cmd += \
-        ' --workspace-root /tmp/catkin_workspace_overlay' + \
-        ' --parent-result-space %s' % ' '.join(parent_result_spaces)
+cmd += \
+    ' --build-tool ' + build_tool + \
+    ' --workspace-root ' + workspace_root + \
+    ' --parent-result-space' + ''.join([' %s/install_isolated' % (space) for space in parent_result_space])
+if vars().get('build_tool_args'):
+    cmd += ' --build-tool-args ' + ' '.join(build_tool_args)
 }@
 CMD ["@cmd"]

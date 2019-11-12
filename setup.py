@@ -21,7 +21,10 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
 
 kwargs = {
     'name': 'ros_buildfarm',
-    'version': '2.0.1',  # same version as in ros_buildfarm/__init__.py
+    # same version as in:
+    # - ros_buildfarm/__init__.py
+    # - stdeb.cfg
+    'version': '3.0.1-master',
     'packages': find_packages(exclude=['test']),
     'scripts': scripts,
     'include_package_data': True,
@@ -29,6 +32,11 @@ kwargs = {
     'install_requires': [
         'empy',
         'PyYAML'],
+    'tests_require': [
+        'flake8 >= 3.7',
+        'flake8_import_order',
+        'pep8',
+        'pyflakes'],
     'author': 'Dirk Thomas',
     'author_email': 'dthomas@osrfoundation.org',
     'maintainer': 'Dirk Thomas',
@@ -52,6 +60,7 @@ elif 'SKIP_PYTHON_SCRIPTS' in os.environ:
     kwargs['name'] += '_modules'
     kwargs['scripts'] = []
 else:
-    kwargs['install_requires'] += ['catkin_pkg >= 0.2.6', 'rosdistro >= 0.4.0']
+    kwargs['install_requires'] += [
+        'catkin_pkg >= 0.2.6', 'rosdistro >= 0.4.0', 'vcstool >= 0.1.37']
 
 setup(**kwargs)

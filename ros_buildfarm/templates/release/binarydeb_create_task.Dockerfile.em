@@ -23,7 +23,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ))@
 
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -100,6 +100,7 @@ cmds.append(
     ' --distribution-repository-urls ' + ' '.join(distribution_repository_urls) +
     ' --distribution-repository-key-files ' + ' ' .join(['/tmp/keys/%d.key' % i for i in range(len(distribution_repository_keys))]) +
     ' --binarydeb-dir ' + binarydeb_dir +
+    ' --env-vars ' + ' '.join(build_environment_variables) +
     ' --dockerfile-dir ' + dockerfile_dir)
 }@
 CMD ["@(' && '.join(cmds))"]

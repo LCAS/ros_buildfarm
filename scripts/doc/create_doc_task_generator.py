@@ -26,8 +26,8 @@ import time
 
 from apt import Cache
 from catkin_pkg.packages import find_packages
-
 from ros_buildfarm.argument import add_argument_build_name
+from ros_buildfarm.argument import add_argument_build_tool
 from ros_buildfarm.argument import add_argument_config_url
 from ros_buildfarm.argument import \
     add_argument_distribution_repository_key_files
@@ -58,7 +58,6 @@ from ros_buildfarm.rosdoc_index import RosdocIndex
 from ros_buildfarm.rosdoc_lite import get_generator_output_folders
 from ros_buildfarm.templates import create_dockerfile
 from ros_buildfarm.templates import expand_template
-
 from rosdep2 import create_default_installer_context
 from rosdep2.catkin_support import get_catkin_view
 from rosdep2.catkin_support import resolve_for_os
@@ -106,6 +105,7 @@ def main(argv=sys.argv[1:]):
         '--arch',
         required=True,
         help="The architecture (e.g. 'amd64')")
+    add_argument_build_tool(parser, required=True)
     add_argument_vcs_information(parser)
     add_argument_distribution_repository_urls(parser)
     add_argument_distribution_repository_key_files(parser)
@@ -116,11 +116,20 @@ def main(argv=sys.argv[1:]):
 
     config = get_config_index(args.config_url)
 
+    condition_context = {
+        'ROS_DISTRO': args.rosdistro_name,
+        'ROS_PYTHON_VERSION': 2,
+        'ROS_VERSION': 1,
+    }
+
     with Scope('SUBSECTION', 'packages'):
         # find packages in workspace
         source_space = os.path.join(args.workspace_root, 'src')
         print("Crawling for packages in workspace '%s'" % source_space)
         pkgs = find_packages(source_space)
+
+        for pkg in pkgs.values():
+            pkg.evaluate_conditions(condition_context)
 
         pkg_names = [pkg.name for pkg in pkgs.values()]
         print('Found the following packages:')
@@ -523,6 +532,8 @@ def main(argv=sys.argv[1:]):
             # rosdoc_lite does not work without genmsg being importable
             get_debian_package_name(args.rosdistro_name, 'genmsg'),
         ]
+        if args.build_tool == 'colcon':
+            debian_pkg_names.append('python3-colcon-ros')
         if 'actionlib_msgs' in pkg_names:
             # to document actions in other packages in the same repository
             debian_pkg_names.append(
@@ -561,6 +572,7 @@ def main(argv=sys.argv[1:]):
             'os_name': args.os_name,
             'os_code_name': args.os_code_name,
             'arch': args.arch,
+            'build_tool': doc_build_file.build_tool,
 
             'distribution_repository_urls': args.distribution_repository_urls,
             'distribution_repository_keys': get_distribution_repository_keys(
@@ -573,6 +585,7 @@ def main(argv=sys.argv[1:]):
 
             'dependencies': debian_pkg_names,
             'dependency_versions': debian_pkg_versions,
+            'install_lists': [],
 
             'canonical_base_url': doc_build_file.canonical_base_url,
 
@@ -629,14 +642,19 @@ def get_dependencies(pkgs, label, get_dependencies_callback):
 
 
 def _get_build_run_doc_dependencies(pkg):
-    return pkg.build_depends + pkg.buildtool_depends + \
-        pkg.build_export_depends + pkg.buildtool_export_depends + \
-        pkg.exec_depends + pkg.doc_depends
+    return [
+        d for d in
+        pkg.build_depends + pkg.buildtool_depends + pkg.build_export_depends +
+        pkg.buildtool_export_depends + pkg.exec_depends + pkg.doc_depends
+        if d.evaluated_condition is not False]
 
 
 def _get_run_dependencies(pkg):
-    return pkg.build_export_depends + pkg.buildtool_export_depends + \
+    return [
+        d for d in
+        pkg.build_export_depends + pkg.buildtool_export_depends +
         pkg.exec_depends
+        if d.evaluated_condition is not False]
 
 
 def initialize_resolver(rosdistro_name, os_name, os_code_name):

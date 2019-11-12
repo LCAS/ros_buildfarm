@@ -30,7 +30,7 @@ class JobValidationError(Exception):
     is not available in the specified index.yaml
     """
 
-    def __init__(self, message):
+    def __init__(self, message):  # noqa: D107
         super(JobValidationError, self).__init__(message)
 
 
@@ -39,7 +39,7 @@ next_scope_id = 1
 
 class Scope(object):
 
-    def __init__(self, scope_name, description):
+    def __init__(self, scope_name, description):  # noqa: D107
         global next_scope_id
         self.scope_name = scope_name
         self.description = description
@@ -144,6 +144,17 @@ def get_binary_package_versions(apt_cache, debian_pkg_names):
         pkg = apt_cache[debian_pkg_name]
         versions[debian_pkg_name] = max(pkg.versions).version
     return versions
+
+
+def get_ci_job_name(rosdistro_name, os_name, os_code_name, arch, job_type):
+    view_name = get_ci_view_name(rosdistro_name)
+    job_name = '%s__%s_%s_%s_%s' % (view_name, job_type, os_name, os_code_name, arch)
+    return job_name
+
+
+def get_ci_view_name(rosdistro_name):
+    view_name = '%sci' % rosdistro_name[0].upper()
+    return view_name
 
 
 def get_debian_package_name_prefix(rosdistro_name):

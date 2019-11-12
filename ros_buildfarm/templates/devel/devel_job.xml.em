@@ -52,7 +52,7 @@ if pull_request:
 @(SNIPPET(
     'scm',
     repo_spec=source_repo_spec,
-    path='catkin_workspace/src/%s' % source_repo_spec.name,
+    path='ws/src/%s' % source_repo_spec.name,
     git_ssh_credential_id=git_ssh_credential_id,
     git_credential=git_credential,
 ))@
@@ -62,7 +62,7 @@ if pull_request:
     url=source_repo_spec.url,
     refspec='+refs/pull/*:refs/remotes/origin/pr/*',
     branch_name='${sha1}',
-    relative_target_dir='catkin_workspace/src/%s' % source_repo_spec.name,
+    relative_target_dir='ws/src/%s' % source_repo_spec.name,
     git_ssh_credential_id=git_ssh_credential_id,
     git_credential=git_credential,
     merge_branch=source_repo_spec.version,
@@ -138,6 +138,9 @@ if pull_request:
         ' ' + os_code_name +
         ' ' + arch +
         ' ' + ' '.join(repository_args) +
+        ' --build-tool ' + build_tool +
+        ' --ros-version ' + str(ros_version) +
+        ' --env-vars ' + ' '.join(build_environment_variables) +
         ' --dockerfile-dir $WORKSPACE/docker_generating_dockers',
         'echo "# END SECTION"',
         '',
@@ -159,10 +162,9 @@ if pull_request:
         ' -e=TRAVIS=$TRAVIS' +
         ' -e=ROS_BUILDFARM_PULL_REQUEST_BRANCH=$ROS_BUILDFARM_PULL_REQUEST_BRANCH' +
         ' -v $WORKSPACE/ros_buildfarm:/tmp/ros_buildfarm:ro' +
-        ' -v $WORKSPACE/catkin_workspace:/tmp/catkin_workspace:ro' +
+        ' -v $WORKSPACE/ws:/tmp/ws:ro' +
         ' -v $WORKSPACE/docker_build_and_install:/tmp/docker_build_and_install' +
         ' -v $WORKSPACE/docker_build_and_test:/tmp/docker_build_and_test' +
-        ' -v ~/.ccache:/home/buildfarm/.ccache' +
         (' -v $HOME/.ssh/known_hosts:/etc/ssh/ssh_known_hosts:ro' +
          ' -v $SSH_AUTH_SOCK:/tmp/ssh_auth_sock' +
          ' -e SSH_AUTH_SOCK=/tmp/ssh_auth_sock' if git_ssh_credential_id else '') +
@@ -192,7 +194,8 @@ if pull_request:
         ' --cidfile=$WORKSPACE/docker_build_and_install/docker.cid' +
         ' -e=TRAVIS=$TRAVIS' +
         ' -v $WORKSPACE/ros_buildfarm:/tmp/ros_buildfarm:ro' +
-        ' -v $WORKSPACE/catkin_workspace:/tmp/catkin_workspace' +
+        ' -v $WORKSPACE/ws:/tmp/ws' +
+        ' -v ~/.ccache:/home/buildfarm/.ccache' +
         ' devel_build_and_install.%s_%s' % (rosdistro_name, source_repo_spec.name.lower()),
         'cd -',  # restore pwd when used in scripts
         'echo "# END SECTION"',
@@ -219,7 +222,8 @@ if pull_request:
         ' --cidfile=$WORKSPACE/docker_build_and_test/docker.cid' +
         ' -e=TRAVIS=$TRAVIS' +
         ' -v $WORKSPACE/ros_buildfarm:/tmp/ros_buildfarm:ro' +
-        ' -v $WORKSPACE/catkin_workspace:/tmp/catkin_workspace' +
+        ' -v $WORKSPACE/ws:/tmp/ws' +
+        ' -v ~/.ccache:/home/buildfarm/.ccache' +
         ' devel_build_and_test.%s_%s' % (rosdistro_name, source_repo_spec.name.lower()),
         'cd -',  # restore pwd when used in scripts
         'echo "# END SECTION"',
@@ -230,13 +234,24 @@ if pull_request:
     script='\n'.join([
         'if [ "$skip_cleanup" = "false" ]; then',
         'echo "# BEGIN SECTION: Clean up to save disk space on agents"',
-        'rm -fr catkin_workspace/build_isolated',
-        'rm -fr catkin_workspace/devel_isolated',
-        'rm -fr catkin_workspace/install_isolated',
+        'rm -fr ws/build_isolated',
+        'rm -fr ws/devel_isolated',
+        'rm -fr ws/install_isolated',
         'echo "# END SECTION"',
         'fi',
     ]),
 ))@
+@[if (not pull_request) and collate_test_stats]@
+@(SNIPPET(
+    'builder_shell',
+    script='\n'.join([
+        'echo "# BEGIN SECTION: Create collated test stats dir"',
+        'rm -fr $WORKSPACE/collated_test_stats',
+        'mkdir -p $WORKSPACE/collated_test_stats',
+        'echo "# END SECTION"',
+    ]),
+))@
+@[end if]@
   </builders>
   <publishers>
 @(SNIPPET(
@@ -245,8 +260,104 @@ if pull_request:
 ))@
 @(SNIPPET(
     'publisher_xunit',
-    pattern='catkin_workspace/test_results/**/*.xml',
+    pattern='ws/test_results/**/*.xml',
 ))@
+@[if (not pull_request) and collate_test_stats]@
+@(SNIPPET(
+    'publisher_groovy-postbuild',
+    script='\n'.join([
+        '// COLLATE BUILD TEST RESULTS AND EXPORT BUILD HISTORY FOR WIKI',
+        'import jenkins.model.Jenkins',
+        'import hudson.FilePath',
+        '',
+        '@Grab(\'org.yaml:snakeyaml:1.17\')',
+        'import org.yaml.snakeyaml.Yaml',
+        'import org.yaml.snakeyaml.DumperOptions',
+        '',
+        'manager.listener.logger.println("# BEGIN SECTION: Collate test results for wiki.")',
+        '',
+        '// nr of builds to include in history',
+        'final num_build_hist = 5',
+        '',
+        'try {',
+        '  def data = [',
+        '    "history" : []',
+        '  ]',
+        '',
+        '  // gather info on tests of current build',
+        '  def tresult = manager.build.getAction(hudson.tasks.junit.TestResultAction.class)?.result',
+        '  if (tresult) {',
+        '    data.latest_build = [',
+        '      "skipped" : tresult.skipCount,',
+        '      "failed" : tresult.failCount,',
+        '      "total" : tresult.totalCount',
+        '    ]',
+        '  }',
+        '  else {',
+        '    manager.listener.logger.println("No test result action for last build, skipping gathering statistics for it.")',
+        '  }',
+        '',
+        '',
+        '  // get access to the job of the running build',
+        '  def job_name = manager.build.getEnvironment(manager.listener).get(\'JOB_NAME\')',
+        '  manager.listener.logger.println("Collating test statistics for \'${job_name}\'.")',
+        '  def job = Jenkins.instance.getItem(job_name)',
+        '  if (job == null) {',
+        '    manager.listener.logger.println("No such job: \'${job_name}\'.")',
+        '    return',
+        '  }',
+        '',
+        '  // store base info',
+        '  data.base_url = Jenkins.instance.getRootUrl()',
+        '  data.total_builds = job.builds.size()',
+        '  data.job_health = job.getBuildHealth().getScore()',
+        '  data.job_health_icon = job.getBuildHealth().getIconClassName()',
+        '',
+        '  // retrieve info on last N builds of this job',
+        '  job.builds.take(num_build_hist).each { b ->',
+        '    tresult = b.getAction(hudson.tasks.junit.TestResultAction.class)?.result',
+        '    if (tresult) {',
+        '      data.history << [',
+        '        "build_id" : b.id as Integer,',
+        '        "uri" : b.url,',
+        '        "stamp" : b.getStartTimeInMillis() / 1e3,',
+        '        "result" :  b.result.toString().toLowerCase(),',
+        '        "tests" : [',
+        '          "skipped" : tresult.skipCount,',
+        '          "failed" : tresult.failCount,',
+        '          "total" : tresult.totalCount',
+        '        ]',
+        '      ]',
+        '    }',
+        '  }',
+        '',
+        '  // write out info to file',
+        '  def DumperOptions options = new DumperOptions()',
+        '  options.setPrettyFlow(true)',
+        '  options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK)',
+        '  def yaml_output = new Yaml(options).dump([\'dev_job_data\' : data])',
+        '',
+        '  def fp = new FilePath(manager.build.workspace, "collated_test_stats/results.yaml")',
+        '  if(fp != null)',
+        '    fp.write(yaml_output, null)',
+        '  else',
+        '    manager.listener.logger.println("Could not write to yaml file (fp == null)")',
+        '',
+        '} finally {',
+        '  manager.listener.logger.println("# END SECTION")',
+        '}',
+    ]),
+))
+@(SNIPPET(
+    'publisher_publish-over-ssh',
+    config_name='docs',
+    remote_directory='%s/devel_jobs/%s' % (rosdistro_name, source_repo_spec.name),
+    source_files=[
+        'collated_test_stats/results.yaml'
+    ],
+    remove_prefix='collated_test_stats',
+))@
+@[end if]@
 @[if not pull_request or notify_pull_requests]@
 @[ if notify_maintainers]@
 @(SNIPPET(

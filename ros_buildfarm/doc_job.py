@@ -18,7 +18,6 @@ from collections import OrderedDict
 import sys
 
 from catkin_pkg.package import parse_package_string
-
 from ros_buildfarm.common import get_default_node_label
 from ros_buildfarm.common import get_doc_job_name
 from ros_buildfarm.common import get_doc_view_name
@@ -35,7 +34,6 @@ from ros_buildfarm.config import get_global_doc_build_files
 from ros_buildfarm.config import get_index as get_config_index
 from ros_buildfarm.git import get_repository
 from ros_buildfarm.templates import expand_template
-
 from rosdistro import get_distribution_cache
 from rosdistro import get_index
 
@@ -307,6 +305,7 @@ def _get_doc_job_config(
         'os_name': os_name,
         'os_code_name': os_code_name,
         'arch': arch,
+        'build_tool': build_file.build_tool,
         'repository_args': repository_args,
 
         'upload_user': build_file.upload_user,
@@ -407,7 +406,6 @@ def configure_doc_independent_job(
 
 def _get_doc_independent_job_config(
         config, config_url, doc_build_name, build_file):
-    template_name = 'doc/doc_independent_job.xml.em'
 
     repository_args, script_generating_key_files = \
         get_repositories_and_script_generating_key_files(config=config)
@@ -426,15 +424,32 @@ def _get_doc_independent_job_config(
         'doc_build_name': doc_build_name,
         'repository_args': repository_args,
 
-        'upload_user': build_file.upload_user,
-        'upload_host': build_file.upload_host,
-        'upload_root': build_file.upload_root,
-
         'notify_emails': build_file.notify_emails,
 
         'timeout_minutes': build_file.jenkins_job_timeout,
-
-        'credential_id': build_file.upload_credential_id,
     }
+
+    if build_file.documentation_type == 'make_target':
+        template_name = 'doc/doc_independent_job.xml.em'
+        job_data.update({
+            'install_apt_packages': build_file.install_apt_packages,
+            'install_pip_packages': build_file.install_pip_packages,
+            'upload_user': build_file.upload_user,
+            'upload_host': build_file.upload_host,
+            'upload_root': build_file.upload_root,
+            'credential_id': build_file.upload_credential_id
+        })
+    elif build_file.documentation_type == 'docker_build':
+        template_name = 'doc/doc_independent_docker_job.xml.em'
+        job_data.update({
+            'upload_repository_url': build_file.upload_repository_url,
+            'upload_repository_branch': build_file.upload_repository_branch,
+            'upload_credential_id': build_file.upload_credential_id,
+        })
+    else:
+        raise JobValidationError(
+            'Not independent documentation_type: ' +
+            build_file.documentation_type
+        )
     job_config = expand_template(template_name, job_data)
     return job_config

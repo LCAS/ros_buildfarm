@@ -17,7 +17,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -38,6 +38,12 @@ RUN echo "@today_str"
 
 @(TEMPLATE(
     'snippet/install_python3.Dockerfile.em',
+    os_name=os_name,
+    os_code_name=os_code_name,
+))@
+
+@(TEMPLATE(
+    'snippet/install_dh-python.Dockerfile.em',
     os_name=os_name,
     os_code_name=os_code_name,
 ))@

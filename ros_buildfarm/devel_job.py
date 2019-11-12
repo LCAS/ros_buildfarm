@@ -18,7 +18,6 @@ from collections import OrderedDict
 import sys
 
 from catkin_pkg.package import parse_package_string
-
 from ros_buildfarm.common import get_default_node_label
 from ros_buildfarm.common import get_devel_job_name
 from ros_buildfarm.common import get_devel_view_name
@@ -34,7 +33,6 @@ from ros_buildfarm.config import get_index as get_config_index
 from ros_buildfarm.config import get_source_build_files
 from ros_buildfarm.git import get_repository
 from ros_buildfarm.templates import expand_template
-
 from rosdistro import get_distribution_cache
 from rosdistro import get_index
 
@@ -301,7 +299,7 @@ def configure_devel_job(
         repo_name, os_name, os_code_name, arch, pull_request)
 
     job_config = _get_devel_job_config(
-        config, rosdistro_name, source_build_name,
+        index, config, rosdistro_name, source_build_name,
         build_file, os_name, os_code_name, arch, source_repository,
         repo_name, pull_request, job_name, dist_cache=dist_cache,
         is_disabled=is_disabled)
@@ -345,7 +343,7 @@ def _get_credential(config, repo_url):
 
 
 def _get_devel_job_config(
-        config, rosdistro_name, source_build_name,
+        index, config, rosdistro_name, source_build_name,
         build_file, os_name, os_code_name, arch, source_repo_spec,
         repo_name, pull_request, job_name, dist_cache=None,
         is_disabled=False):
@@ -353,6 +351,12 @@ def _get_devel_job_config(
 
     repository_args, script_generating_key_files = \
         get_repositories_and_script_generating_key_files(build_file=build_file)
+
+    build_environment_variables = []
+    if build_file.build_environment_variables:
+        build_environment_variables = [
+            '%s=%s' % (var, value)
+            for var, value in sorted(build_file.build_environment_variables.items())]
 
     maintainer_emails = set([])
     if build_file.notify_maintainers and dist_cache and repo_name and \
@@ -372,6 +376,11 @@ def _get_devel_job_config(
         build_file.jenkins_commit_job_priority \
         if not pull_request \
         else build_file.jenkins_pull_request_job_priority
+
+    distribution_type = index.distributions[rosdistro_name] \
+        .get('distribution_type', 'ros1')
+    assert distribution_type in ('ros1', 'ros2')
+    ros_version = 1 if distribution_type == 'ros1' else 2
 
     job_data = {
         'github_url': get_github_project_url(source_repo_spec.url),
@@ -404,6 +413,9 @@ def _get_devel_job_config(
         'os_code_name': os_code_name,
         'arch': arch,
         'repository_args': repository_args,
+        'build_tool': build_file.build_tool,
+        'ros_version': ros_version,
+        'build_environment_variables': build_environment_variables,
 
         'notify_compiler_warnings': build_file.notify_compiler_warnings,
         'notify_emails': build_file.notify_emails,
@@ -415,8 +427,8 @@ def _get_devel_job_config(
         'timeout_minutes': build_file.jenkins_job_timeout,
 
         'git_ssh_credential_id': config.git_ssh_credential_id,
-
-        'git_credential': _get_credential(config, source_repo_spec.url)
+        'git_credential': _get_credential(config, source_repo_spec.url),
+        'collate_test_stats': build_file.collate_test_stats
     }
     job_config = expand_template(template_name, job_data)
     return job_config

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 
 
@@ -56,11 +57,20 @@ def add_argument_older_rosdistro_names(parser):
         help='List of older rosdistro names to compare with')
 
 
-def add_argument_build_name(parser, build_file_type):
+def add_argument_build_name(parser, build_file_type, nargs=None):
     parser.add_argument(
         '%s_build_name' % build_file_type,
+        nargs=nargs,
         help="The name / key of the '%s-build' file from the index" %
              build_file_type)
+
+
+def add_argument_env_vars(parser):
+    parser.add_argument(
+        '--env-vars',
+        nargs='*', default=[],
+        help="Environment variables as 'key=value' for Dockerfile "
+             'ENV directives')
 
 
 def add_argument_repository_name(parser):
@@ -268,8 +278,124 @@ def add_argument_package_names(parser):
         help='A space separated list of package names')
 
 
-def add_argument_repository_names(parser):
+def add_argument_repository_names(parser, optional=False):
     parser.add_argument(
         '--repository-names',
-        nargs='+',
+        nargs='*' if optional else '+',
         help='A space separated list of repository names')
+
+
+def add_argument_build_tool(parser, required=False):
+    default_help = '' if required else ' (default: as set in the build file)'
+    parser.add_argument(
+        '--build-tool',
+        choices=('catkin_make_isolated', 'colcon'),
+        required=required,
+        help='The build tool to use' + default_help)
+
+
+def add_argument_ros_version(parser):
+    parser.add_argument(
+        '--ros-version', type=int, required=True,
+        help='The major ROS version')
+
+
+def add_argument_install_apt_packages(parser):
+    parser.add_argument(
+        '--install-apt-packages',
+        nargs='*',
+        default=[],
+        help='The list of packages to install with apt')
+
+
+def add_argument_install_pip_packages(parser):
+    parser.add_argument(
+        '--install-pip-packages',
+        nargs='*',
+        default=[],
+        help='The list of packages to install with pip')
+
+
+def add_argument_install_packages(parser):
+    parser.add_argument(
+        '--install-packages', nargs='*',
+        help='The specified package(s) will be installed prior to any '
+             'packages detected for installation by rosdep.')
+
+
+def add_argument_package_selection_args(parser):
+    return parser.add_argument(
+        '--package-selection-args', nargs=argparse.REMAINDER,
+        help='Package selection arguments passed to colcon '
+             'to specify which packages should be built and tested.')
+
+
+def add_argument_build_tool_args(parser):
+    return parser.add_argument(
+        '--build-tool-args', nargs=argparse.REMAINDER,
+        help='Arbitrary arguments passed to the build tool.')
+
+
+def add_argument_repos_file_urls(parser):
+    parser.add_argument(
+        '--repos-file-urls', nargs='*', metavar='URL',
+        help='URLs of repos files to import with vcs.')
+
+
+def add_argument_skip_cleanup(parser):
+    parser.add_argument(
+        '--skip-cleanup', action='store_true',
+        help='Skip cleanup of build artifacts')
+
+
+def add_argument_skip_rosdep_keys(parser):
+    parser.add_argument(
+        '--skip-rosdep-keys', nargs='*',
+        help='The specified rosdep keys will be ignored, i.e. not resolved '
+             'and not installed.')
+
+
+def add_argument_test_branch(parser):
+    parser.add_argument(
+        '--test-branch', default=None,
+        help='Branch to attempt to checkout before doing batch job.')
+
+
+def add_argument_testing(parser):
+    parser.add_argument(
+        '--testing', action='store_true',
+        help='Generate a task for testing packages rather than installing '
+             'them.')
+
+
+def check_len_action(minargs, maxargs):
+    class CheckLength(argparse.Action):
+        def __call__(self, parser, args, values, option_string=None):
+            if len(values) < minargs:
+                raise argparse.ArgumentError(
+                    argument=self,
+                    message='expected at least %s arguments' % (minargs))
+            elif len(values) > maxargs:
+                raise argparse.ArgumentError(
+                    argument=self,
+                    message='expected at most %s arguments' % (minargs))
+            setattr(args, self.dest, values)
+    return CheckLength
+
+
+def extract_multiple_remainders(argv, arguments):
+    # the following logic only works for arguments with a single option string
+    for a in arguments:
+        assert len(a.option_strings) == 1
+    indexes = {
+        argv.index(a.option_strings[0]): a
+        for a in arguments if a.option_strings[0] in argv}
+    remainders = {}
+    # only necessary if there is more than one remainder argument
+    # otherwise argparse can handle it just fine
+    if len(indexes) > 1:
+        for index in sorted(indexes.keys(), reverse=True):
+            argument = indexes[index]
+            remainders[argument.dest] = argv[index + 1:]
+            del argv[index:]
+    return remainders

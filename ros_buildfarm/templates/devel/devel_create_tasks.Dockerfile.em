@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -61,9 +61,9 @@ ENTRYPOINT ["sh", "-c"]
 cmds = [
 'rosdep update',
 ]
-workspace_root = '/tmp/catkin_workspace'
+workspace_root = '/tmp/ws'
 if prerelease_overlay:
-    workspace_root += ' /tmp/catkin_workspace_overlay'
+    workspace_root += ' /tmp/ws2'
 cmd = \
     'PYTHONPATH=/tmp/ros_buildfarm:$PYTHONPATH python3 -u' + \
     ' /tmp/ros_buildfarm/scripts/devel/create_devel_task_generator.py' + \
@@ -73,7 +73,10 @@ cmd = \
     ' --os-code-name ' + os_code_name + \
     ' --arch ' + arch + \
     ' --distribution-repository-urls ' + ' '.join(distribution_repository_urls) + \
-    ' --distribution-repository-key-files ' + ' ' .join(['/tmp/keys/%d.key' % i for i in range(len(distribution_repository_keys))])
+    ' --distribution-repository-key-files ' + ' ' .join(['/tmp/keys/%d.key' % i for i in range(len(distribution_repository_keys))]) + \
+    ' --build-tool ' + build_tool + \
+    ' --ros-version ' + str(ros_version) + \
+    ' --env-vars ' + ' ' .join(env_vars)
 cmds += [
     cmd +
     ' --dockerfile-dir /tmp/docker_build_and_install',

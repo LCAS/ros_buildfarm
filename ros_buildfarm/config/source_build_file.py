@@ -19,7 +19,7 @@ class SourceBuildFile(BuildFile):
 
     _type = 'source-build'
 
-    def __init__(self, name, data):
+    def __init__(self, name, data):  # noqa: D107
         assert 'type' in data, "Expected file type is '%s'" % \
             SourceBuildFile._type
         assert data['type'] == SourceBuildFile._type, \
@@ -38,6 +38,8 @@ class SourceBuildFile(BuildFile):
 
         super(SourceBuildFile, self).__init__(name, data)
 
+        assert len(self.targets) > 0
+
         self.jenkins_commit_job_priority = None
         if 'jenkins_commit_job_priority' in data:
             self.jenkins_commit_job_priority = \
@@ -53,6 +55,9 @@ class SourceBuildFile(BuildFile):
         self.jenkins_job_timeout = None
         if 'jenkins_job_timeout' in data:
             self.jenkins_job_timeout = int(data['jenkins_job_timeout'])
+
+        self.build_tool = data.get('build_tool', 'catkin_make_isolated')
+        assert self.build_tool in ('catkin_make_isolated', 'colcon')
 
         self.notify_committers = None
         self.notify_compiler_warnings = False
@@ -92,21 +97,23 @@ class SourceBuildFile(BuildFile):
         self.test_commits_force = None
         if 'test_commits' in data:
             if 'default' in data['test_commits']:
-                    self.test_commits_default = bool(
-                        data['test_commits']['default'])
+                self.test_commits_default = bool(
+                    data['test_commits']['default'])
             if 'force' in data['test_commits']:
-                    self.test_commits_force = bool(
-                        data['test_commits']['force'])
+                self.test_commits_force = bool(
+                    data['test_commits']['force'])
 
         self.test_pull_requests_default = False
         self.test_pull_requests_force = None
         if 'test_pull_requests' in data:
             if 'default' in data['test_pull_requests']:
-                    self.test_pull_requests_default = bool(
-                        data['test_pull_requests']['default'])
+                self.test_pull_requests_default = bool(
+                    data['test_pull_requests']['default'])
             if 'force' in data['test_pull_requests']:
-                    self.test_pull_requests_force = bool(
-                        data['test_pull_requests']['force'])
+                self.test_pull_requests_force = bool(
+                    data['test_pull_requests']['force'])
+
+        self.collate_test_stats = bool(data.get('collate_test_stats', False))
 
     def filter_repositories(self, repository_names):
         res = set(repository_names)

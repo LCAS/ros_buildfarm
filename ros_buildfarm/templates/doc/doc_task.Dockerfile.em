@@ -22,7 +22,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -54,10 +54,21 @@ RUN echo "@today_str"
     os_code_name=os_code_name,
 ))@
 
+@[if build_tool == 'colcon']@
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y python3-pip
+@# colcon-core.package_identification.python needs at least version 30.3.0
+RUN pip3 install -U setuptools
+@[end if]@
+
 @(TEMPLATE(
     'snippet/install_dependencies.Dockerfile.em',
     dependencies=dependencies,
     dependency_versions=dependency_versions,
+))@
+
+@(TEMPLATE(
+    'snippet/install_dependencies_from_file.Dockerfile.em',
+    install_lists=install_lists,
 ))@
 
 @[if os_name == 'ubuntu' and os_code_name[0] == 't']@
@@ -82,7 +93,8 @@ cmd = 'PYTHONPATH=/tmp/ros_buildfarm:$PYTHONPATH python3 -u' + \
     ' --rosdistro-name ' + rosdistro_name + \
     ' --os-code-name ' + os_code_name + \
     ' --arch ' + arch + \
-    ' --workspace-root /tmp/catkin_workspace' + \
+    ' --build-tool ' + build_tool + \
+    ' --workspace-root /tmp/ws' + \
     ' --rosdoc-lite-dir /tmp/rosdoc_lite' + \
     ' --catkin-sphinx-dir /tmp/catkin-sphinx' + \
     ' --rosdoc-index /tmp/rosdoc_index' + \

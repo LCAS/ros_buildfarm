@@ -23,7 +23,7 @@ ENV DEBIAN_FRONTEND noninteractive
     timezone=timezone,
 ))@
 
-RUN useradd -u @uid -m buildfarm
+RUN useradd -u @uid -l -m buildfarm
 
 @(TEMPLATE(
     'snippet/add_distribution_repositories.Dockerfile.em',
@@ -56,15 +56,31 @@ RUN echo "@today_str"
 ))@
 
 @(TEMPLATE(
+    'snippet/install_dh-python.Dockerfile.em',
+    os_name=os_name,
+    os_code_name=os_code_name,
+))@
+
+@(TEMPLATE(
     'snippet/install_ccache.Dockerfile.em',
     os_name=os_name,
     os_code_name=os_code_name,
 ))@
 
 @(TEMPLATE(
+    'snippet/set_environment_variables.Dockerfile.em',
+    environment_variables=build_environment_variables,
+))@
+
+@(TEMPLATE(
     'snippet/install_dependencies.Dockerfile.em',
     dependencies=dependencies,
     dependency_versions=dependency_versions,
+))@
+
+@(TEMPLATE(
+    'snippet/install_dependencies_from_file.Dockerfile.em',
+    install_lists=install_lists,
 ))@
 
 USER buildfarm

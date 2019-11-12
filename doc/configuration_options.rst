@@ -70,6 +70,12 @@ Generic options in build files
 
 A set of options which can be used in any build file.
 
+* ``build_environment_variables``: a dictionary containing environment
+  variables which will be inserted into binarydeb build containers before
+  package dependencies are installed using Dockerfile ``ENV`` directives.
+  Note that yaml will turn bare words like ``yes`` into boolean values so it
+  is recommended to quote values to avoid interpretation.
+
 * ``repositories``: additional repositories to fetch packages from.
 
   * ``keys``: a list of PGP keys each as a multi line string.
@@ -92,8 +98,13 @@ A set of options which can be used in any build file.
   The OS names and OS code names specified must be listed as a
   *release platform* in the corresponding rosdistro distribution file.
 
-  A doc build file must only contain a single target.
+  A doc build file of **rosdoc_lite**, **released_manifest** or **make_target**
+  documentation type can only be built for a single target and thus it must not
+  specificy more than one.
 
+  A doc build file of **docker_build** documentation type is built for the
+  platform the associated docker image is based on, therefore no targets can
+  be specified.
 
 Description of common options
 -----------------------------
@@ -221,6 +232,11 @@ The following options are valid in version ``2`` (beside the generic options):
 * ``jenkins_pull_request_job_priority``: the job priority of *pull request*
   jobs.
 
+* ``build_tool``: the build tool to use. The following are valid values:
+
+  * ``catkin_make_isolated`` (default)
+  * ``colcon``
+
 * ``notifications``: a dictionary with the following keys:
 
   * ``compiler_warnings``: boolean flag if compiler warnings should mark a job
@@ -248,6 +264,14 @@ The following options are valid in version ``2`` (beside the generic options):
 
   * ``default``: a boolean flag as described for *test_commits*.
   * ``force``: a boolean flag as described for *test_commits*.
+
+* ``collate_test_stats``: a boolean flag (default: ``False``) controlling
+  whether test statistics collation should be enabled for devel jobs.
+  Enabling this will add post-build steps to jobs that collate test statistics
+  for historical builds, serialize those to yaml snippets and copy those
+  snippets to the ``repo`` host.
+  A special macro in the ROS wiki will then render those test results as part of
+  the auto-generated *Package Header*.
 
 The following options are valid as keys in the ``_config`` dict under
 ``targets``:
@@ -286,13 +310,27 @@ The following options are valid in version ``2`` (beside the generic options):
   * ``make_target``: Invokes ``make html`` in the ``doc`` subdirectory for a
     set of repositories. See ``doc_repositories`` to configure the
     repositories.
+  * ``docker_build``: Commits documentation content to be pushed to an
+    ``upload_repository_url`` generated from a set of repositories by
+    running Docker containers provided by each. See ``doc_repositories``
+    to configure the repositories. See *doc* jobs documentation to learn
+    about the expected Dockerfile structure.
 
-* ``doc_repositories``: a list of repository URLs (only used with the
-  ``documentation_type`` set to ``make_target``).
+* ``doc_repositories``: a list of repository URLs (used when the
+  ``documentation_type`` is set to ``make_target`` or ``docker_build``).
+* ``install_apt_packages``: a list of packages to be installed with apt (only
+  allowed when the ``documentation_type`` is set to ``make_target``).
+* ``install_pip_packages``: a list of packages to be installed with pip (only
+  allowed when the ``documentation_type`` is set to ``make_target``).
 * ``jenkins_job_priority``: the job priority of *doc* jobs.
 * ``jenkins_job_label``: the label expression for both *doc* jobs (default:
   ``buildagent || <ROSDISTRO_NAME>_doc_<BUILD_FILE_NAME>``).
 * ``jenkins_job_timeout``: the job timeout for *doc* jobs.
+
+* ``build_tool``: the build tool to use. The following are valid values:
+
+  * ``catkin_make_isolated`` (default)
+  * ``colcon``
 
 * ``notifications``: a dictionary with the following keys:
 
@@ -323,8 +361,14 @@ The following options are valid in version ``2`` (beside the generic options):
   whitelisted) repositories should not be generated (default: ``false``) (only
   allowed if ``released_packages`` is ``false``).
 
+The following options are valid for all ``documentation_type`` values:
+
 * ``upload_credential_id``: the ID of the credential to upload the built
   packages to the repository host.
+
+The following options are valid for ``documentation_type`` values other
+than ``docker_build``:
+
 * ``upload_host``: The hostname to use to rsync the resultant files.
   This should match the config ``upload::docs::host`` in the buildfarm_deployment_config.
   The default is ``repo``.
@@ -334,6 +378,12 @@ The following options are valid in version ``2`` (beside the generic options):
 * ``upload_user``: The username to use to rsync the resultant files.
   This should match the config ``upload::docs::user`` in the buildfarm_deployment_config.
   The default is ``jenkins-agent``
+
+The following options are valid when ``documentation_type`` is set to
+``docker_build``:
+
+* ``upload_repository_url``: The URL of the git repository to push resultant
+  files to.
 
 The following options are valid as keys in the ``_config`` dict under
 ``targets``:
@@ -345,3 +395,62 @@ The following options are valid as keys in the ``_config`` dict under
   rosdistro by default.
   To override this, add an entry to this list corresponding to the
   20-default.list file from your forked rosdistro repository.
+
+Specific options in CI build files
+----------------------------------
+
+This yaml file defines the configuration for *CI* jobs.
+
+The file format is specified by the following information:
+
+* ``type: ci-build`` identifies the yaml file as a *CI build file*.
+* ``version: 1`` specifies the specification version of the file.
+
+The following options are valid in version ``1`` (beside the generic options):
+
+* ``build_tool``: the build tool to use.
+  The following are valid values:
+
+  * ``catkin_make_isolated``
+  * ``colcon`` (default)
+
+* ``build_tool_args``: arbitrary arguments passed to the build tool.
+
+* ``install_packages``: a list of packages which should be installed by default
+  before any of the dependencies necessary to build the packages in the
+  workspace.
+  Since not all packages in the workspace are necessarily ROS packages, rosdep
+  may be unable to detect and install the prerequisites for those packages, so
+  those prerequisite packages may need to be listed here.
+
+* ``jenkins_job_priority``: the job priority of *CI* jobs.
+
+* ``jenkins_job_schedule``: the schedule on which to run the nightly *CI* job.
+  For example, to run the nightly build at 11 PM each night, a value of
+  ``0 23 * * *`` may be used.
+
+* ``jenkins_job_timeout``: the job timeout for *CI* jobs.
+
+* ``jenkins_job_upstream_triggers``: names of other CI jobs which, when
+  built with a stable or unstable result, should trigger this job to be built.
+
+* ``package_selection_args``: package selection arguments passed to ``colcon``
+  to specify which packages should be built and tested.
+  Note that ``colcon`` is always used to select packages even when
+  ``build_tool`` specifies something other else.
+
+* ``repos_files``: the list of ``.repos`` files to use by default when creating
+  a workspace to build.
+
+* ``repository_names``: the names of repositories in the rosdistro to be
+  checkout into the workspace with their branch specified in the ``source``
+  entry.
+
+* ``skip_rosdep_keys``: a list of rosdep keys which should be ignored when
+  rosdep is invoked to resolve package dependencies.
+
+* ``test_branch``: branch to attempt to checkout and merge in each repository
+  before running the job.
+
+* ``underlay_from_ci_jobs``: names of other CI jobs which should be used
+  as an underlay to this job.

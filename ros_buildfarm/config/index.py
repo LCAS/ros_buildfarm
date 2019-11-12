@@ -22,7 +22,7 @@ class Index(object):
 
     _type = 'buildfarm'
 
-    def __init__(self, data, base_url):
+    def __init__(self, data, base_url):  # noqa: D107
         assert 'type' in data, "Expected file type is '%s'" % Index._type
         assert data['type'] == Index._type, \
             "Expected file type is '%s', not '%s' loaded from '%s'" % \
@@ -55,6 +55,7 @@ class Index(object):
                 self.distributions[distro_name] = {}
                 distro_data = data['distributions'][distro_name]
                 value_types = {
+                    'ci_builds': dict,
                     'doc_builds': dict,
                     'notification_emails': list,
                     'release_builds': dict,
@@ -78,14 +79,23 @@ class Index(object):
                         self.distributions[distro_name][key] = []
                         for v in value:
                             self.distributions[distro_name][key].append(v)
+                    elif isinstance(value, int):
+                        self.distributions[distro_name][key] = value
                     else:
                         assert False
 
                 unset_keys = [
                     k for k in value_types.keys()
-                    if k not in distro_data]
+                    if k not in self.distributions[distro_name]]
                 for key in unset_keys:
                     self.distributions[distro_name][key] = value_types[key]()
+
+        self.ci_builds = {}
+        if 'ci_builds' in data and data['ci_builds']:
+            assert isinstance(data['ci_builds'], dict)
+            for k, v in data['ci_builds'].items():
+                v = _resolve_url(base_url, v)
+                self.ci_builds[k] = v
 
         self.doc_builds = {}
         if 'doc_builds' in data and data['doc_builds']:

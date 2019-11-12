@@ -20,10 +20,8 @@ import argparse
 import json
 import sys
 
-
 from catkin_pkg.packages import find_packages
 from em import BANGPATH_OPT
-
 from ros_buildfarm.argument import add_argument_arch
 from ros_buildfarm.argument import add_argument_config_url
 from ros_buildfarm.argument import add_argument_os_code_name
@@ -33,7 +31,6 @@ from ros_buildfarm.config import get_index as get_config_index
 from ros_buildfarm.prerelease import add_overlay_arguments
 from ros_buildfarm.prerelease import get_overlay_package_names
 from ros_buildfarm.templates import expand_template
-
 from rosdistro import get_distribution_cache
 from rosdistro import get_index
 from rosdistro.manifest_provider import get_release_tag
@@ -54,11 +51,16 @@ def main(argv=sys.argv[1:]):
         '--underlay-packages', nargs='+',
         help='Names of packages on which the overlay builds '
              '(by default package names come from packages found in '
-             "'catkin_workspace/src')"
+             "'ws/src')"
     )
-    parser.add_argument(
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
         '--json', action='store_true',
         help='Output overlay information as JSON instead of a shell script'
+    )
+    group.add_argument(
+        '--vcstool', action='store_true',
+        help='Output overlay information as vcstool repos file'
     )
 
     args = parser.parse_args(argv)
@@ -72,7 +74,7 @@ def main(argv=sys.argv[1:]):
     # determine source repositories for overlay workspace
     underlay_package_names = args.underlay_packages
     if underlay_package_names is None:
-        packages = find_packages('catkin_workspace/src')
+        packages = find_packages('ws/src')
         underlay_package_names = [pkg.name for pkg in packages.values()]
     print('Underlay workspace contains %d packages:%s' %
           (len(underlay_package_names),
@@ -95,17 +97,24 @@ def main(argv=sys.argv[1:]):
             get_repository_specification_for_released_package(
                 dist_file, pkg_name)
     scms = [
-        (repositories[k], 'catkin_workspace_overlay/src/%s' % k)
+        (repositories[k], 'ws_overlay/src/%s' % k)
         for k in sorted(repositories.keys())]
 
-    if not args.json:
+    if args.json:
+        print(json.dumps([vars(r) for r, p in scms], sort_keys=True, indent=2))
+    elif args.vcstool:
+        print('repositories:')
+        for r, p in scms:
+            print('  %s:' % p)
+            print('    type: ' + r.type)
+            print('    url: ' + r.url)
+            print('    version: ' + r.version)
+    else:
         value = expand_template(
             'prerelease/prerelease_overlay_script.sh.em', {
                 'scms': scms},
             options={BANGPATH_OPT: False})
         print(value)
-    else:
-        print(json.dumps([vars(r) for r, p in scms], sort_keys=True, indent=2))
 
 
 def get_repository_specification_for_released_package(dist_file, pkg_name):
