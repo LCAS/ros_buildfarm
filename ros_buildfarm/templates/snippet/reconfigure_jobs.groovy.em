@@ -1,3 +1,5 @@
+@@Grab(group='io.github.java-diff-util', module='java-diff-utils', version='4.5')
+
 import difflib.DiffUtils
 import groovy.io.FileType
 @@ThreadInterrupt
