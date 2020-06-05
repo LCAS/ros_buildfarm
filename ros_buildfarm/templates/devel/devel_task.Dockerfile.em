@@ -62,7 +62,7 @@ RUN pip3 install -U setuptools
 @[if ros_version == 2]@
 RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ros-@(rosdistro_name)-ros-workspace
 @[end if]@
-RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache build-essential gcc
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache build-essential gcc openssl
 
 @(TEMPLATE(
     'snippet/set_environment_variables.Dockerfile.em',
