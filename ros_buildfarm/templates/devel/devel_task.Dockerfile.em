@@ -54,7 +54,7 @@ RUN echo "@today_str"
     os_code_name=os_code_name,
 ))@
 
-RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache build-essential gcc
+RUN python3 -u /tmp/wrapper_scripts/apt.py update-install-clean -q -y ccache build-essential gcc openssl
 
 @(TEMPLATE(
     'snippet/install_dependencies.Dockerfile.em',
